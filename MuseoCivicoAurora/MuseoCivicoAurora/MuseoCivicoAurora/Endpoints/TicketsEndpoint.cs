@@ -6,10 +6,10 @@ namespace MuseoCivicoAurora.Endpoints;
 
 public static class TicketsEndpoint
 {
-    public static IEndpointRouteBuilder MapBigliettiEndpoints(
+    public static IEndpointRouteBuilder MapTicketsEndpoint(
                                                 this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/biglietti");
+        var group = app.MapGroup("api/tickets");
 
         group.MapGet("", GetAllAsync);
         group.MapGet("{id:int}", GetByIdAsync);
@@ -20,47 +20,47 @@ public static class TicketsEndpoint
         return app;
     }
 
-    private static async Task<Ok<IEnumerable<Biglietto>>> GetAllAsync(BigliettiService service)
+    private static async Task<Ok<IEnumerable<Ticket>>> GetAllAsync(TicketsService service)
     {
-        var opere = await service.GetBigliettiAsync();
+        var tickets = await service.GetTicketsAsync();
 
-        return TypedResults.Ok(opere);
+        return TypedResults.Ok(tickets);
     }
 
-    private static async Task<Results<NotFound, Ok<Biglietto>>> GetByIdAsync(Guid id, BigliettiService service)
+    private static async Task<Results<NotFound, Ok<Ticket>>> GetByIdAsync(Guid id, TicketsService service)
     {
-        var biglietto = await service.GetBigliettoByIdAsync(id);
-        if (biglietto is null)
+        var ticket = await service.GetTicketByIdAsync(id);
+        if (ticket is null)
             return TypedResults.NotFound();
 
-        return TypedResults.Ok(biglietto);
+        return TypedResults.Ok(ticket);
     }
 
-    private static async Task<Created<Biglietto>> AddAsync(Biglietto biglietto, BigliettiService service)
+    private static async Task<Created<Ticket>> AddAsync(Ticket ticket, TicketsService service)
     {
-        await service.AddBigliettoAsync(biglietto);
+        await service.AddTicketAsync(ticket);
 
-        return TypedResults.Created($"/api/products/{biglietto.Id}", biglietto);
+        return TypedResults.Created($"/api/products/{ticket.Id}", ticket);
     }
 
-    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Biglietto biglietto, BigliettiService service)
+    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Ticket ticket, TicketsService service)
     {
-        var found = await service.GetBigliettoByIdAsync(id);
+        var found = await service.GetTicketByIdAsync(id);
         if (found is null)
             return TypedResults.NotFound();
 
-        await service.UpdateBigliettoAsync(biglietto);
+        await service.UpdateTicketAsync(ticket);
 
         return TypedResults.NoContent();
     }
 
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, BigliettiService service)
+    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, TicketsService service)
     {
-        var found = await service.GetBigliettoByIdAsync(id);
+        var found = await service.GetTicketByIdAsync(id);
         if (found is null)
             return TypedResults.NotFound();
 
-        await service.DeleteBigliettoByIdAsync(id);
+        await service.DeleteTicketByIdAsync(id);
 
         return TypedResults.NoContent();
     }
