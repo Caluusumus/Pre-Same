@@ -6,10 +6,10 @@ namespace MuseoCivicoAurora.Endpoints;
 
 public static class ArtworksEndpoint
 {
-    public static IEndpointRouteBuilder MapOpereEndpoints(
+    public static IEndpointRouteBuilder MapArtWorksEndpoint(
                                                 this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/opere");
+        var group = app.MapGroup("api/artworks");
 
         group.MapGet("", GetAllAsync);
         group.MapGet("{id:int}", GetByIdAsync);
@@ -20,47 +20,47 @@ public static class ArtworksEndpoint
         return app;
     }
 
-    private static async Task<Ok<IEnumerable<Opera>>> GetAllAsync(OpereService service)
+    private static async Task<Ok<IEnumerable<Artwork>>> GetAllAsync(ArtworksService service)
     {
-        var opere = await service.GetOpereAsync();
+        var artworks = await service.GetArtworksAsync();
 
-        return TypedResults.Ok(opere);
+        return TypedResults.Ok(artworks);
     }
 
-    private static async Task<Results<NotFound, Ok<Opera>>> GetByIdAsync(Guid id, OpereService service)
+    private static async Task<Results<NotFound, Ok<Artwork>>> GetByIdAsync(Guid id, ArtworksService service)
     {
-        var opera = await service.GetOperaByIdAsync(id);
-        if (opera is null)
+        var artwork = await service.GetArtworkByIdAsync(id);
+        if (artwork is null)
             return TypedResults.NotFound();
 
-        return TypedResults.Ok(opera);
+        return TypedResults.Ok(artwork);
     }
 
-    private static async Task<Created<Opera>> AddAsync(Opera opera, OpereService service)
+    private static async Task<Created<Artwork>> AddAsync(Artwork artwork, ArtworksService service)
     {
-        await service.AddOperaAsync(opera);
+        await service.AddArtworkAsync(artwork);
 
-        return TypedResults.Created($"/api/products/{opera.Id}", opera);
+        return TypedResults.Created($"/api/products/{artwork.Id}", artwork);
     }
 
-    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Opera opera, OpereService service)
+    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Artwork artwork, ArtworksService service)
     {
-        var found = await service.GetOperaByIdAsync(id);
+        var found = await service.GetArtworkByIdAsync(id);
         if (found is null)
             return TypedResults.NotFound();
 
-        await service.UpdateOperaAsync(opera);
+        await service.UpdateArtworkAsync(artwork);
 
         return TypedResults.NoContent();
     }
 
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, OpereService service)
+    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, ArtworksService service)
     {
-        var found = await service.GetOperaByIdAsync(id);
+        var found = await service.GetArtworkByIdAsync(id);
         if (found is null)
             return TypedResults.NotFound();
 
-        await service.DeleteOperaByIdAsync(id);
+        await service.DeleteArtworkByIdAsync(id);
 
         return TypedResults.NoContent();
     }
