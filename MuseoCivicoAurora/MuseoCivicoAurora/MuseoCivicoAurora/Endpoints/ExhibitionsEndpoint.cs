@@ -4,7 +4,7 @@ using MuseoCivicoAurora.Service;
 
 namespace MuseoCivicoAurora.Endpoints;
 
-public static class MostreEndpoints
+public static class ExhibitionsEndpoint
 {
     public static IEndpointRouteBuilder MapMostreEndpoints(
                                                 this IEndpointRouteBuilder app)
