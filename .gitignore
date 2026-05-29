@@ -72,3 +72,6 @@ x86/
 
 # Sql files
 *.sql
+
+#appsettings files
+appsettings.json
