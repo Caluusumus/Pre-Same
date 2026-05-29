@@ -5,6 +5,7 @@ using MuseoCivicoAurora.Client.Pages;
 using MuseoCivicoAurora.Components;
 using MuseoCivicoAurora.Components.Account;
 using MuseoCivicoAurora.Data;
+using MuseoCivicoAurora.Endpoints;
 using MuseoCivicoAurora.Service;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -75,5 +76,12 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+// Mappa le API
+app.MapArtWorksEndpoint();
+app.MapExhibitionsEndpoints();
+app.MapToursEndpoint();
+app.MapTicketsEndpoint();
+app.MapBookingsEndpoints();
 
 app.Run();
