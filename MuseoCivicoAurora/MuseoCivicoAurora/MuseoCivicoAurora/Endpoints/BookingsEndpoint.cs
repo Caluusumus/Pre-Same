@@ -6,10 +6,10 @@ namespace MuseoCivicoAurora.Endpoints;
 
 public static class BookingsEndpoint
 {
-    public static IEndpointRouteBuilder MapPrenotazioniEndpoints(
+    public static IEndpointRouteBuilder MapBookingsEndpoints(
                                                 this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/prenotazioni");
+        var group = app.MapGroup("api/bookings");
 
         group.MapGet("", GetAllAsync);
         group.MapGet("{id:int}", GetByIdAsync);
@@ -20,47 +20,47 @@ public static class BookingsEndpoint
         return app;
     }
 
-    private static async Task<Ok<IEnumerable<Prenotazione>>> GetAllAsync(PrenotazioniService service)
+    private static async Task<Ok<IEnumerable<Booking>>> GetAllAsync(BookingsService service)
     {
-        var prenotazioni = await service.GetPrenotazioniAsync();
+        var bookings = await service.GetBookingsAsync();
 
-        return TypedResults.Ok(prenotazioni);
+        return TypedResults.Ok(bookings);
     }
 
-    private static async Task<Results<NotFound, Ok<Prenotazione>>> GetByIdAsync(Guid id, PrenotazioniService service)
+    private static async Task<Results<NotFound, Ok<Booking>>> GetByIdAsync(Guid id, BookingsService service)
     {
-        var prenotazione = await service.GetPrenotazioneByIdAsync(id);
-        if (prenotazione is null)
+        var booking = await service.GetBookingByIdAsync(id);
+        if (booking is null)
             return TypedResults.NotFound();
 
-        return TypedResults.Ok(prenotazione);
+        return TypedResults.Ok(booking);
     }
 
-    private static async Task<Created<Prenotazione>> AddAsync(Prenotazione prenotazione, PrenotazioniService service)
+    private static async Task<Created<Booking>> AddAsync(Booking booking, BookingsService service)
     {
-        await service.AddPrenotazioneAsync(prenotazione);
+        await service.AddBookingAsync(booking);
 
-        return TypedResults.Created($"/api/products/{prenotazione.Id}", prenotazione);
+        return TypedResults.Created($"/api/products/{booking.Id}", booking);
     }
 
-    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Prenotazione prenotazione, PrenotazioniService service)
+    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Booking booking, BookingsService service)
     {
-        var found = await service.GetPrenotazioneByIdAsync(id);
+        var found = await service.GetBookingByIdAsync(id);
         if (found is null)
             return TypedResults.NotFound();
 
-        await service.UpdatePrenotazioneAsync(prenotazione);
+        await service.UpdateBookingAsync(booking);
 
         return TypedResults.NoContent();
     }
 
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, PrenotazioniService service)
+    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, BookingsService service)
     {
-        var found = await service.GetPrenotazioneByIdAsync(id);
+        var found = await service.GetBookingByIdAsync(id);
         if (found is null)
             return TypedResults.NotFound();
 
-        await service.DeletePrenotazioneByIdAsync(id);
+        await service.DeleteBookingByIdAsync(id);
 
         return TypedResults.NoContent();
     }

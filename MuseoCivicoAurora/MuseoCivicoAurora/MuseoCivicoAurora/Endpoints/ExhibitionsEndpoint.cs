@@ -6,10 +6,10 @@ namespace MuseoCivicoAurora.Endpoints;
 
 public static class ExhibitionsEndpoint
 {
-    public static IEndpointRouteBuilder MapMostreEndpoints(
+    public static IEndpointRouteBuilder MapExhibitionsEndpoints(
                                                 this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/mostre");
+        var group = app.MapGroup("api/exhibitions");
 
         group.MapGet("", GetAllAsync);
         group.MapGet("{id:int}", GetByIdAsync);
@@ -20,47 +20,47 @@ public static class ExhibitionsEndpoint
         return app;
     }
 
-    private static async Task<Ok<IEnumerable<Mostra>>> GetAllAsync(MostreService service)
+    private static async Task<Ok<IEnumerable<Exhibition>>> GetAllAsync(ExhibitionsService service)
     {
-        var mostre = await service.GetMostreAsync();
+        var exhibitions = await service.GetExhibitionsAsync();
 
-        return TypedResults.Ok(mostre);
+        return TypedResults.Ok(exhibitions);
     }
 
-    private static async Task<Results<NotFound, Ok<Mostra>>> GetByIdAsync(Guid id, MostreService service)
+    private static async Task<Results<NotFound, Ok<Exhibition>>> GetByIdAsync(Guid id, ExhibitionsService service)
     {
-        var mostra = await service.GetMostraByIdAsync(id);
-        if (mostra is null)
+        var exhibition = await service.GetExhibitionByIdAsync(id);
+        if (exhibition is null)
             return TypedResults.NotFound();
 
-        return TypedResults.Ok(mostra);
+        return TypedResults.Ok(exhibition);
     }
 
-    private static async Task<Created<Mostra>> AddAsync(Mostra mostra, MostreService service)
+    private static async Task<Created<Exhibition>> AddAsync(Exhibition exhibition, ExhibitionsService service)
     {
-        await service.AddMostraAsync(mostra);
+        await service.AddExhibitionAsync(exhibition);
 
-        return TypedResults.Created($"/api/products/{mostra.Id}", mostra);
+        return TypedResults.Created($"/api/products/{exhibition.Id}", exhibition);
     }
 
-    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Mostra mostra, MostreService service)
+    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Exhibition exhibition, ExhibitionsService service)
     {
-        var found = await service.GetMostraByIdAsync(id);
+        var found = await service.GetExhibitionByIdAsync(id);
         if (found is null)
             return TypedResults.NotFound();
 
-        await service.UpdateMostraAsync(mostra);
+        await service.UpdateExhibitionAsync(exhibition);
 
         return TypedResults.NoContent();
     }
 
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, MostreService service)
+    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, ExhibitionsService service)
     {
-        var found = await service.GetMostraByIdAsync(id);
+        var found = await service.GetExhibitionByIdAsync(id);
         if (found is null)
             return TypedResults.NotFound();
 
-        await service.DeleteMostraByIdAsync(id);
+        await service.DeleteExhibitionByIdAsync(id);
 
         return TypedResults.NoContent();
     }

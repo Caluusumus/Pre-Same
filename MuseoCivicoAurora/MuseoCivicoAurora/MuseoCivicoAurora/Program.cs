@@ -5,6 +5,7 @@ using MuseoCivicoAurora.Client.Pages;
 using MuseoCivicoAurora.Components;
 using MuseoCivicoAurora.Components.Account;
 using MuseoCivicoAurora.Data;
+using MuseoCivicoAurora.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,12 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddDefaultTokenProviders();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+
+builder.Services.AddScoped<IArtworksService, ArtworksService>();
+builder.Services.AddScoped<IBookingsService, BookingsService>();
+builder.Services.AddScoped<IExhibitionsService, ExhibitionsService>();
+builder.Services.AddScoped<ITicketsService, TicketsService>();
+builder.Services.AddScoped<IToursService, ToursService>();
 
 var app = builder.Build();
 

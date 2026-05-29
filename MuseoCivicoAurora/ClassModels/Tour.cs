@@ -1,6 +1,4 @@
-﻿using System.Data;
-
-namespace ClassModels;
+﻿namespace ClassModels;
 
 public class Tour
 {
