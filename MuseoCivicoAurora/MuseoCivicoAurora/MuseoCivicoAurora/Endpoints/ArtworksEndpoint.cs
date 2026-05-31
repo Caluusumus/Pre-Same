@@ -12,10 +12,10 @@ public static class ArtworksEndpoint
         var group = app.MapGroup("api/artworks");
 
         group.MapGet("", GetAllAsync);
-        group.MapGet("{id:int}", GetByIdAsync);
+        group.MapGet("{id:guid}", GetByIdAsync);
         group.MapPost("", AddAsync);
-        group.MapPut("{id:int}", UpdateAsync);
-        group.MapDelete("{id:int}", DeleteAsync);
+        group.MapPut("{id:guid}", UpdateAsync);
+        group.MapDelete("{id:guid}", DeleteAsync);
 
         return app;
     }
@@ -40,7 +40,7 @@ public static class ArtworksEndpoint
     {
         await service.AddArtworkAsync(artwork);
 
-        return TypedResults.Created($"/api/products/{artwork.Id}", artwork);
+        return TypedResults.Created($"/api/artworks/{artwork.Id}", artwork);
     }
 
     private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Artwork artwork, ArtworksService service)

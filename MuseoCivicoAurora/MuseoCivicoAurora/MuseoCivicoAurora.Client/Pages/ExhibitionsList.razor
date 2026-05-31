@@ -1,0 +1,79 @@
+﻿@page "/exhibitions"
+@using ClassModels
+@using MuseoCivicoAurora.Client.Services
+@inject ExhibitionApiClient ApiClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+<h3>Lista Mostre</h3>
+
+<button class="btn btn-primary mb-3" @onclick="CreateNew">Crea Nuova Mostra</button>
+
+@if (exhibitions == null)
+{
+    <p><em>Caricamento in corso...</em></p>
+}
+else if (!exhibitions.Any())
+{
+    <p>Nessuna mostra trovata.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Titolo</th>
+                <th>Data Inizio</th>
+                <th>Data Fine</th>
+                <th>Stato</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var exhibition in exhibitions)
+            {
+                <tr>
+                    <td>@exhibition.Title</td>
+                    <td>@exhibition.StartDate.ToShortDateString()</td>
+                    <td>@exhibition.EndDate.ToShortDateString()</td>
+                    <td>@exhibition.Status</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" @onclick="() => Edit(exhibition.Id)">Modifica</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(exhibition.Id)">Elimina</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Exhibition>? exhibitions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        exhibitions = await ApiClient.GetExhibitionsAsync();
+    }
+
+    private void CreateNew()
+    {
+        NavigationManager.NavigateTo("/exhibitions/edit");
+    }
+
+    private void Edit(Guid id)
+    {
+        NavigationManager.NavigateTo($"/exhibitions/edit/{id}");
+    }
+
+    private async Task Delete(Guid id)
+    {
+        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
+        await ApiClient.DeleteExhibitionAsync(id);
+        await LoadData();
+    }
+}

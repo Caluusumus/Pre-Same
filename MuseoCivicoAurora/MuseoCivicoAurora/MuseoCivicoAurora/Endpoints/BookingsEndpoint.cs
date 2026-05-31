@@ -12,10 +12,10 @@ public static class BookingsEndpoint
         var group = app.MapGroup("api/bookings");
 
         group.MapGet("", GetAllAsync);
-        group.MapGet("{id:int}", GetByIdAsync);
+        group.MapGet("{id:guid}", GetByIdAsync);
         group.MapPost("", AddAsync);
-        group.MapPut("{id:int}", UpdateAsync);
-        group.MapDelete("{id:int}", DeleteAsync);
+        group.MapPut("{id:guid}", UpdateAsync);
+        group.MapDelete("{id:guid}", DeleteAsync);
 
         return app;
     }
@@ -40,7 +40,7 @@ public static class BookingsEndpoint
     {
         await service.AddBookingAsync(booking);
 
-        return TypedResults.Created($"/api/products/{booking.Id}", booking);
+        return TypedResults.Created($"/api/bookings/{booking.Id}", booking);
     }
 
     private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Booking booking, BookingsService service)

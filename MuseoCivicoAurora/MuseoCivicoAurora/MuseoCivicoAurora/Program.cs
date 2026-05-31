@@ -1,11 +1,15 @@
+using ClassModels;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MuseoCivicoAurora.Client.Pages;
+using MuseoCivicoAurora.Client.Services;
 using MuseoCivicoAurora.Components;
 using MuseoCivicoAurora.Components.Account;
 using MuseoCivicoAurora.Data;
+using MuseoCivicoAurora.Endpoints;
 using MuseoCivicoAurora.Service;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,7 +52,22 @@ builder.Services.AddScoped<IExhibitionsService, ExhibitionsService>();
 builder.Services.AddScoped<ITicketsService, TicketsService>();
 builder.Services.AddScoped<IToursService, ToursService>();
 
+
+
+ // Assicurati di avere questo in cima
+
+// Registra l'HttpClient in modo che il server possa chiamare le sue stesse API
+builder.Services.AddHttpClient<ExhibitionApiClient>(client =>
+{
+    // Il server chiama se stesso. Sostituisci la porta con quella che vedi
+    // nel file launchSettings.json (es. https://localhost:7215)
+    client.BaseAddress = new Uri("https://localhost:7215");
+});
+
+
 var app = builder.Build();
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -75,5 +94,7 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+app.MapExhibitionsEndpoints();
 
 app.Run();
