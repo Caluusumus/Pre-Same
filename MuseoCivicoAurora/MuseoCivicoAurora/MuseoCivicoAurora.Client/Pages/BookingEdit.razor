@@ -1,0 +1,75 @@
+﻿@page "/bookings/edit"
+@page "/bookings/edit/{Id:guid}"
+@using ClassModels
+@using MuseoCivicoAurora.Client.Services
+@inject BookingApiClient ApiClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+<h3>@(Id == null ? "Nuova Prenotazione" : "Modifica Prenotazione")</h3>
+
+@if (booking == null)
+{
+    <p><em>Caricamento...</em></p>
+}
+else
+{
+    <EditForm Model="booking" OnValidSubmit="SaveBooking">
+        <DataAnnotationsValidator />
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Nome</label>
+                <InputText class="form-control" @bind-Value="booking.FirstName" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Cognome</label>
+                <InputText class="form-control" @bind-Value="booking.LastName" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <InputText class="form-control" @bind-Value="booking.Email" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Numero Partecipanti</label>
+            <InputNumber class="form-control" @bind-Value="booking.ParticipantsCount" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Stato (es. confirmed, cancelled)</label>
+            <InputSelect class="form-control" @bind-Value="booking.Status">
+                <option value="confirmed">Confermata</option>
+                <option value="cancelled">Annullata</option>
+            </InputSelect>
+        </div>
+
+        <button type="submit" class="btn btn-success">Salva</button>
+        <button type="button" class="btn btn-secondary" @onclick="GoBack">Annulla</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+    private Booking? booking;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+            booking = await ApiClient.GetBookingByIdAsync(Id.Value);
+        else
+            booking = new Booking { Status = "confirmed" };
+    }
+
+    private async Task SaveBooking()
+    {
+        if (Id.HasValue) await ApiClient.UpdateBookingAsync(Id.Value, booking!);
+        else await ApiClient.CreateBookingAsync(booking!);
+
+        NavigationManager.NavigateTo("/bookings");
+    }
+
+    private void GoBack() => NavigationManager.NavigateTo("/bookings");
+}

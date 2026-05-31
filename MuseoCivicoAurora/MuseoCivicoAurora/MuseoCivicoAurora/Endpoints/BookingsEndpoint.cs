@@ -1,67 +1,72 @@
 ﻿using ClassModels;
-using Microsoft.AspNetCore.Http.HttpResults;
 using MuseoCivicoAurora.Service;
 
 namespace MuseoCivicoAurora.Endpoints;
 
 public static class BookingsEndpoint
 {
-    public static IEndpointRouteBuilder MapBookingsEndpoints(
-                                                this IEndpointRouteBuilder app)
+    public static void MapBookingsEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/bookings");
+        var group = app.MapGroup("/api/bookings").WithTags("Bookings").DisableAntiforgery();
 
-        group.MapGet("", GetAllAsync);
-        group.MapGet("{id:guid}", GetByIdAsync);
-        group.MapPost("", AddAsync);
-        group.MapPut("{id:guid}", UpdateAsync);
-        group.MapDelete("{id:guid}", DeleteAsync);
+        group.MapGet("/", async (IBookingsService service) =>
+        {
+            var bookings = await service.GetBookingsAsync();
+            return Results.Ok(bookings);
+        });
 
-        return app;
-    }
+        group.MapGet("/{id:guid}", async (Guid id, IBookingsService service) =>
+        {
+            var booking = await service.GetBookingByIdAsync(id);
+            return booking is null
+                ? Results.NotFound()
+                : Results.Ok(booking);
+        });
 
-    private static async Task<Ok<IEnumerable<Booking>>> GetAllAsync(BookingsService service)
-    {
-        var bookings = await service.GetBookingsAsync();
+        group.MapPost("/", async (Booking booking, IBookingsService service) =>
+        {
+            try
+            {
+                await service.AddBookingAsync(booking);
+                return Results.Created($"/api/bookings/{booking.Id}", booking);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-        return TypedResults.Ok(bookings);
-    }
+        group.MapPut("/{id:guid}", async (Guid id, Booking booking, IBookingsService service) =>
+        {
+            try
+            {
+                var existing = await service.GetBookingByIdAsync(id);
+                if (existing is null) return Results.NotFound();
 
-    private static async Task<Results<NotFound, Ok<Booking>>> GetByIdAsync(Guid id, BookingsService service)
-    {
-        var booking = await service.GetBookingByIdAsync(id);
-        if (booking is null)
-            return TypedResults.NotFound();
+                booking.Id = id;
+                await service.UpdateBookingAsync(booking);
+                return Results.Ok(booking);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-        return TypedResults.Ok(booking);
-    }
+        group.MapDelete("/{id:guid}", async (Guid id, IBookingsService service) =>
+        {
+            try
+            {
+                var existing = await service.GetBookingByIdAsync(id);
+                if (existing is null) return Results.NotFound();
 
-    private static async Task<Created<Booking>> AddAsync(Booking booking, BookingsService service)
-    {
-        await service.AddBookingAsync(booking);
-
-        return TypedResults.Created($"/api/bookings/{booking.Id}", booking);
-    }
-
-    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Booking booking, BookingsService service)
-    {
-        var found = await service.GetBookingByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.UpdateBookingAsync(booking);
-
-        return TypedResults.NoContent();
-    }
-
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, BookingsService service)
-    {
-        var found = await service.GetBookingByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.DeleteBookingByIdAsync(id);
-
-        return TypedResults.NoContent();
+                await service.DeleteBookingByIdAsync(id);
+                return Results.NoContent();
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
     }
 }

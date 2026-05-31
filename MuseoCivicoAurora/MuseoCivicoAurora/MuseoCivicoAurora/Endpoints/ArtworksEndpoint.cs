@@ -1,67 +1,72 @@
 ﻿using ClassModels;
-using Microsoft.AspNetCore.Http.HttpResults;
 using MuseoCivicoAurora.Service;
 
 namespace MuseoCivicoAurora.Endpoints;
 
 public static class ArtworksEndpoint
 {
-    public static IEndpointRouteBuilder MapArtWorksEndpoint(
-                                                this IEndpointRouteBuilder app)
+    public static void MapArtWorksEndpoint(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/artworks");
+        var group = app.MapGroup("/api/artworks").WithTags("Artworks").DisableAntiforgery();
 
-        group.MapGet("", GetAllAsync);
-        group.MapGet("{id:guid}", GetByIdAsync);
-        group.MapPost("", AddAsync);
-        group.MapPut("{id:guid}", UpdateAsync);
-        group.MapDelete("{id:guid}", DeleteAsync);
+        group.MapGet("/", async (IArtworksService service) =>
+        {
+            var artworks = await service.GetArtworksAsync();
+            return Results.Ok(artworks);
+        });
 
-        return app;
-    }
+        group.MapGet("/{id:guid}", async (Guid id, IArtworksService service) =>
+        {
+            var artwork = await service.GetArtworkByIdAsync(id);
+            return artwork is null
+                ? Results.NotFound()
+                : Results.Ok(artwork);
+        });
 
-    private static async Task<Ok<IEnumerable<Artwork>>> GetAllAsync(ArtworksService service)
-    {
-        var artworks = await service.GetArtworksAsync();
+        group.MapPost("/", async (Artwork artwork, IArtworksService service) =>
+        {
+            try
+            {
+                await service.AddArtworkAsync(artwork);
+                return Results.Created($"/api/artworks/{artwork.Id}", artwork);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-        return TypedResults.Ok(artworks);
-    }
+        group.MapPut("/{id:guid}", async (Guid id, Artwork artwork, IArtworksService service) =>
+        {
+            try
+            {
+                var existing = await service.GetArtworkByIdAsync(id);
+                if (existing is null) return Results.NotFound();
 
-    private static async Task<Results<NotFound, Ok<Artwork>>> GetByIdAsync(Guid id, ArtworksService service)
-    {
-        var artwork = await service.GetArtworkByIdAsync(id);
-        if (artwork is null)
-            return TypedResults.NotFound();
+                artwork.Id = id;
+                await service.UpdateArtworkAsync(artwork);
+                return Results.Ok(artwork);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-        return TypedResults.Ok(artwork);
-    }
+        group.MapDelete("/{id:guid}", async (Guid id, IArtworksService service) =>
+        {
+            try
+            {
+                var existing = await service.GetArtworkByIdAsync(id);
+                if (existing is null) return Results.NotFound();
 
-    private static async Task<Created<Artwork>> AddAsync(Artwork artwork, ArtworksService service)
-    {
-        await service.AddArtworkAsync(artwork);
-
-        return TypedResults.Created($"/api/artworks/{artwork.Id}", artwork);
-    }
-
-    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Artwork artwork, ArtworksService service)
-    {
-        var found = await service.GetArtworkByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.UpdateArtworkAsync(artwork);
-
-        return TypedResults.NoContent();
-    }
-
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, ArtworksService service)
-    {
-        var found = await service.GetArtworkByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.DeleteArtworkByIdAsync(id);
-
-        return TypedResults.NoContent();
+                await service.DeleteArtworkByIdAsync(id);
+                return Results.NoContent();
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
     }
 }

@@ -9,6 +9,8 @@ using MuseoCivicoAurora.Components.Account;
 using MuseoCivicoAurora.Data;
 using MuseoCivicoAurora.Endpoints;
 using MuseoCivicoAurora.Service;
+using Dapper;
+using MuseoCivicoAurora.Helpers;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,9 +54,14 @@ builder.Services.AddScoped<IExhibitionsService, ExhibitionsService>();
 builder.Services.AddScoped<ITicketsService, TicketsService>();
 builder.Services.AddScoped<IToursService, ToursService>();
 
+SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
 
+// Add services to the container.
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 
- // Assicurati di avere questo in cima
+// Assicurati di avere questo in cima
 
 // Registra l'HttpClient in modo che il server possa chiamare le sue stesse API
 builder.Services.AddHttpClient<ExhibitionApiClient>(client =>
@@ -63,6 +70,10 @@ builder.Services.AddHttpClient<ExhibitionApiClient>(client =>
     // nel file launchSettings.json (es. https://localhost:7215)
     client.BaseAddress = new Uri("https://localhost:7215");
 });
+builder.Services.AddHttpClient<ArtworkApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
+builder.Services.AddHttpClient<BookingApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
+builder.Services.AddHttpClient<TicketApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
+builder.Services.AddHttpClient<TourApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
 
 
 var app = builder.Build();

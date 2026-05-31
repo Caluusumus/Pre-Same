@@ -1,0 +1,75 @@
+﻿@page "/tickets/edit"
+@page "/tickets/edit/{Id:guid}"
+@using ClassModels
+@using MuseoCivicoAurora.Client.Services
+@inject TicketApiClient ApiClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+<h3>@(Id == null ? "Nuovo Biglietto" : "Modifica Biglietto")</h3>
+
+@if (ticket == null)
+{
+    <p><em>Caricamento...</em></p>
+}
+else
+{
+    <EditForm Model="ticket" OnValidSubmit="SaveTicket">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label class="form-label">Nome Acquirente</label>
+            <InputText class="form-control" @bind-Value="ticket.FirstName" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <InputText class="form-control" @bind-Value="ticket.Email" />
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Tipologia</label>
+                <InputSelect class="form-control" @bind-Value="ticket.Type">
+                    <option value="full">Intero</option>
+                    <option value="reduced">Ridotto</option>
+                    <option value="free">Gratuito</option>
+                </InputSelect>
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Quantità</label>
+                <InputNumber class="form-control" @bind-Value="ticket.Quantity" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Totale (€)</label>
+                <InputNumber class="form-control" @bind-Value="ticket.Total" />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success">Salva</button>
+        <button type="button" class="btn btn-secondary" @onclick="GoBack">Annulla</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+    private Ticket? ticket;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+            ticket = await ApiClient.GetTicketByIdAsync(Id.Value);
+        else
+            ticket = new Ticket { Type = "full", Quantity = 1 };
+    }
+
+    private async Task SaveTicket()
+    {
+        if (Id.HasValue) await ApiClient.UpdateTicketAsync(Id.Value, ticket!);
+        else await ApiClient.CreateTicketAsync(ticket!);
+
+        NavigationManager.NavigateTo("/tickets");
+    }
+
+    private void GoBack() => NavigationManager.NavigateTo("/tickets");
+}

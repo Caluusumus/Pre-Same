@@ -1,0 +1,85 @@
+﻿@page "/tours/edit"
+@page "/tours/edit/{Id:guid}"
+@using ClassModels
+@using MuseoCivicoAurora.Client.Services
+@inject TourApiClient ApiClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+<h3>@(Id == null ? "Nuova Visita" : "Modifica Visita")</h3>
+
+@if (tour == null)
+{
+    <p><em>Caricamento...</em></p>
+}
+else
+{
+    <EditForm Model="tour" OnValidSubmit="SaveTour">
+        <DataAnnotationsValidator />
+
+        <div class="mb-3">
+            <label class="form-label">Titolo</label>
+            <InputText class="form-control" @bind-Value="tour.Title" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Descrizione</label>
+            <InputTextArea class="form-control" @bind-Value="tour.Description" />
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data e Ora</label>
+                <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="tour.DateTime" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Durata (es. 01:30)</label>
+                <InputText class="form-control" @bind-Value="durationProxy" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Guida</label>
+                <InputText class="form-control" @bind-Value="tour.Guide" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Numero Max Partecipanti</label>
+                <InputNumber class="form-control" @bind-Value="tour.ParticipantsCount" />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success">Salva</button>
+        <button type="button" class="btn btn-secondary" @onclick="GoBack">Annulla</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+    private Tour? tour;
+
+    // Proxy per gestire il TimeOnly (Durata) con un semplice campo Testo HTML
+    private string durationProxy
+    {
+        get => tour?.Duration?.ToString("HH:mm") ?? "";
+        set => tour!.Duration = TimeOnly.TryParse(value, out var t) ? t : null;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+            tour = await ApiClient.GetTourByIdAsync(Id.Value);
+        else
+            tour = new Tour { DateTime = DateTime.Now };
+    }
+
+    private async Task SaveTour()
+    {
+        if (Id.HasValue) await ApiClient.UpdateTourAsync(Id.Value, tour!);
+        else await ApiClient.CreateTourAsync(tour!);
+
+        NavigationManager.NavigateTo("/tours");
+    }
+
+    private void GoBack() => NavigationManager.NavigateTo("/tours");
+}

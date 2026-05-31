@@ -1,0 +1,61 @@
+﻿@page "/tickets"
+@using ClassModels
+@using MuseoCivicoAurora.Client.Services
+@inject TicketApiClient ApiClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+<h3>Lista Biglietti</h3>
+
+<button class="btn btn-primary mb-3" @onclick="CreateNew">Emetti Nuovo Biglietto</button>
+
+@if (tickets == null)
+{
+    <p><em>Caricamento in corso...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nome/Acquirente</th>
+                <th>Email</th>
+                <th>Tipologia</th>
+                <th>Quantità</th>
+                <th>Totale (€)</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ticket in tickets)
+            {
+                <tr>
+                    <td>@ticket.FirstName</td>
+                    <td>@ticket.Email</td>
+                    <td>@ticket.Type</td>
+                    <td>@ticket.Quantity</td>
+                    <td>@ticket.Total</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" @onclick="() => Edit(ticket.Id)">Modifica</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(ticket.Id)">Elimina</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Ticket>? tickets;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+    private async Task LoadData() => tickets = await ApiClient.GetTicketsAsync();
+    private void CreateNew() => NavigationManager.NavigateTo("/tickets/edit");
+    private void Edit(Guid id) => NavigationManager.NavigateTo($"/tickets/edit/{id}");
+
+    private async Task Delete(Guid id)
+    {
+        await ApiClient.DeleteTicketAsync(id);
+        await LoadData();
+    }
+}

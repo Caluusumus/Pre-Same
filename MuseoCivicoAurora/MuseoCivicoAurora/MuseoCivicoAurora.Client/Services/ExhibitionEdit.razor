@@ -1,0 +1,158 @@
+﻿@page "/exhibitions/edit"
+@page "/exhibitions/edit/{Id:guid}"
+@rendermode InteractiveWebAssembly
+@using ClassModels
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>@(Id == null ? "Nuova Mostra" : "Modifica Mostra")</h3>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+@if (exhibition == null)
+{
+    <p><em>Caricamento dei dati in corso...</em></p>
+}
+else
+{
+    <EditForm Model="exhibition" OnValidSubmit="SalvaMostra" FormName="formMostra">
+        <DataAnnotationsValidator />
+        <ValidationSummary style="color: red; font-weight: bold; margin-bottom: 15px;" />
+
+        <div class="mb-3">
+            <label class="form-label">Titolo della Mostra (*):</label>
+            <InputText class="form-control" @bind-Value="exhibition.Title" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Descrizione:</label>
+            <InputTextArea class="form-control" @bind-Value="exhibition.Description" />
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data Inizio:</label>
+                <InputDate class="form-control" @bind-Value="exhibition.StartDate" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Data Fine:</label>
+                <InputDate class="form-control" @bind-Value="exhibition.EndDate" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">URL Immagine (Locandina):</label>
+            <InputText class="form-control" @bind-Value="exhibition.Image" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Stato:</label>
+            <InputSelect class="form-control" @bind-Value="exhibition.Status">
+                <option value="scheduled">Programmata (Scheduled)</option>
+                <option value="active">Attiva (Active)</option>
+                <option value="closed">Chiusa (Closed)</option>
+            </InputSelect>
+        </div>
+
+        <button type="submit" class="btn btn-success">Salva</button>
+        <a href="/exhibitions" class="btn btn-secondary">Annulla</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    // Inizializziamo subito un oggetto di default per evitare schermate vuote se è una creazione
+    private Exhibition exhibition = new Exhibition
+    {
+        StartDate = DateTime.Today,
+        EndDate = DateTime.Today.AddDays(30),
+        Status = "scheduled"
+    };
+
+    private string ErrorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (Id.HasValue)
+            {
+                // Modalità Modifica: scarichiamo la mostra dal server
+                var fetchedExhibition = await Http.GetFromJsonAsync<Exhibition>($"api/exhibitions/{Id.Value}");
+                if (fetchedExhibition != null)
+                {
+                    exhibition = fetchedExhibition;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore di caricamento: {ex.Message}";
+        }
+    }
+
+    private async Task SalvaMostra()
+    {
+        ErrorMessage = string.Empty;
+
+        // Validazione lato client (obbliga ad inserire un titolo prima di chiamare l'API)
+        if (string.IsNullOrWhiteSpace(exhibition.Title))
+        {
+            ErrorMessage = "Il titolo della mostra è obbligatorio.";
+            return;
+        }
+
+        HttpResponseMessage response;
+
+        try
+        {
+            if (Id.HasValue)
+            {
+                // PUT: Aggiornamento
+                response = await Http.PutAsJsonAsync($"api/exhibitions/{Id.Value}", exhibition);
+            }
+            else
+            {
+                // POST: Creazione
+                exhibition.Id = Guid.NewGuid();
+                response = await Http.PostAsJsonAsync("api/exhibitions", exhibition);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/exhibitions");
+            }
+            else
+            {
+                // GESTIONE DELL'ERRORE 400 (Bad Request)
+                var errorJson = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    using var doc = JsonDocument.Parse(errorJson);
+                    if (doc.RootElement.TryGetProperty("message", out var msgElement))
+                    {
+                        ErrorMessage = msgElement.GetString() ?? "Errore di validazione.";
+                    }
+                    else
+                    {
+                        ErrorMessage = $"Errore di validazione dal server: {errorJson}";
+                    }
+                }
+                catch
+                {
+                    ErrorMessage = "Il server ha rifiutato i dati, controlla i formati (Errore 400).";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore di rete o di salvataggio: {ex.Message}";
+        }
+    }
+}

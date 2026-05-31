@@ -1,0 +1,177 @@
+﻿@page "/artworks/edit"
+@page "/artworks/edit/{Id:guid}"
+@rendermode InteractiveWebAssembly
+@using ClassModels
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>@(Id == null ? "Nuova Opera" : "Modifica Opera")</h3>
+
+@if (!string.IsNullOrEmpty(ErrorMessage))
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+@if (exhibitions == null)
+{
+    <p><em>Caricamento dei dati in corso...</em></p>
+}
+else
+{
+    <EditForm Model="artwork" OnValidSubmit="SalvaOpera" FormName="formOpera">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Titolo dell'Opera (*):</label>
+            <InputText class="form-control" @bind-Value="artwork.Title" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Autore:</label>
+            <InputText class="form-control" @bind-Value="artwork.Artist" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Tipologia (es. Dipinto, Scultura):</label>
+            <InputText class="form-control" @bind-Value="artwork.Type" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Anno / Data di realizzazione:</label>
+            <InputDate class="form-control" @bind-Value="yearProxy" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Mostra di appartenenza (Opzionale):</label>
+            <InputSelect TValue="Guid?" class="form-control" @bind-Value="artwork.ExhibitionId">
+                <option value="">-- Nessuna mostra --</option>
+                @foreach (var exh in exhibitions)
+                {
+                    <option value="@exh.Id">@exh.Title</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Descrizione:</label>
+            <InputTextArea class="form-control" @bind-Value="artwork.Description" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">URL Immagine:</label>
+            <InputText class="form-control" @bind-Value="artwork.Image" />
+        </div>
+
+        <button type="submit" class="btn btn-success">Salva</button>
+        <a href="/artworks" class="btn btn-secondary">Annulla</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private Artwork artwork = new Artwork();
+
+    // Lista per popolare il menu a tendina delle mostre
+    private List<Exhibition>? exhibitions;
+    private string ErrorMessage = string.Empty;
+
+    // Proxy di conversione Blazor per DateOnly (poiché HTML InputDate usa DateTime)
+    private DateTime? yearProxy
+    {
+        get => artwork.Year?.ToDateTime(TimeOnly.MinValue);
+        set => artwork.Year = value.HasValue ? DateOnly.FromDateTime(value.Value) : null;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Scarichiamo la lista delle mostre per il menu a tendina
+            exhibitions = await Http.GetFromJsonAsync<List<Exhibition>>("api/exhibitions");
+
+            if (Id.HasValue)
+            {
+                // Modalità Modifica: carichiamo i dati dell'opera esistente
+                var fetchedArtwork = await Http.GetFromJsonAsync<Artwork>($"api/artworks/{Id.Value}");
+                if (fetchedArtwork != null)
+                {
+                    artwork = fetchedArtwork;
+                }
+            }
+            else
+            {
+                // Modalità Nuovo: pre-impostiamo dati base se necessario
+                artwork.Year = DateOnly.FromDateTime(DateTime.Today);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore di inizializzazione: {ex.Message}";
+        }
+    }
+
+    private async Task SalvaOpera()
+    {
+        ErrorMessage = string.Empty;
+
+        // Esempio di validazione preventiva (opzionale)
+        if (string.IsNullOrWhiteSpace(artwork.Title))
+        {
+            ErrorMessage = "Il titolo dell'opera è obbligatorio.";
+            return;
+        }
+
+        HttpResponseMessage response;
+
+        try
+        {
+            if (Id.HasValue)
+            {
+                response = await Http.PutAsJsonAsync($"api/artworks/{Id.Value}", artwork);
+            }
+            else
+            {
+                // Generiamo un nuovo ID per la creazione
+                artwork.Id = Guid.NewGuid();
+                response = await Http.PostAsJsonAsync("api/artworks", artwork);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/artworks");
+            }
+            else
+            {
+                // Se c'è un errore 400 Bad Request, leggiamo il JSON del server
+                var errorJson = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    using var doc = JsonDocument.Parse(errorJson);
+                    // Prova a leggere il campo "message" se le tue API lo inviano,
+                    // oppure mostra il JSON grezzo per fare debug
+                    if (doc.RootElement.TryGetProperty("message", out var msgElement))
+                    {
+                        ErrorMessage = msgElement.GetString() ?? "Errore di validazione.";
+                    }
+                    else
+                    {
+                        // Se l'API restituisce i validation errors standard di .NET
+                        ErrorMessage = $"Errore di validazione dal server: {errorJson}";
+                    }
+                }
+                catch
+                {
+                    ErrorMessage = "Si è verificato un errore imprevisto durante il salvataggio.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore di rete o di salvataggio: {ex.Message}";
+        }
+    }
+}

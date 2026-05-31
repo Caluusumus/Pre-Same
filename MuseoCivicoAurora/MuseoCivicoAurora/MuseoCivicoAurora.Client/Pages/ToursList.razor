@@ -1,0 +1,61 @@
+﻿@page "/tours"
+@using ClassModels
+@using MuseoCivicoAurora.Client.Services
+@inject TourApiClient ApiClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+<h3>Lista Visite Guidate</h3>
+
+<button class="btn btn-primary mb-3" @onclick="CreateNew">Crea Nuova Visita</button>
+
+@if (tours == null)
+{
+    <p><em>Caricamento in corso...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Titolo</th>
+                <th>Data e Ora</th>
+                <th>Durata</th>
+                <th>Guida</th>
+                <th>Max Partecipanti</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var tour in tours)
+            {
+                <tr>
+                    <td>@tour.Title</td>
+                    <td>@(tour.DateTime?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                    <td>@(tour.Duration?.ToString("HH:mm") ?? "-")</td>
+                    <td>@tour.Guide</td>
+                    <td>@tour.ParticipantsCount</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" @onclick="() => Edit(tour.Id)">Modifica</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(tour.Id)">Elimina</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Tour>? tours;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+    private async Task LoadData() => tours = await ApiClient.GetToursAsync();
+    private void CreateNew() => NavigationManager.NavigateTo("/tours/edit");
+    private void Edit(Guid id) => NavigationManager.NavigateTo($"/tours/edit/{id}");
+
+    private async Task Delete(Guid id)
+    {
+        await ApiClient.DeleteTourAsync(id);
+        await LoadData();
+    }
+}

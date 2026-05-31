@@ -1,0 +1,59 @@
+﻿@page "/artworks"
+@using ClassModels
+@using MuseoCivicoAurora.Client.Services
+@inject ArtworkApiClient ApiClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+<h3>Lista Opere</h3>
+
+<button class="btn btn-primary mb-3" @onclick="CreateNew">Aggiungi Nuova Opera</button>
+
+@if (artworks == null)
+{
+    <p><em>Caricamento in corso...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Titolo</th>
+                <th>Autore</th>
+                <th>Tipologia</th>
+                <th>Anno</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var artwork in artworks)
+            {
+                <tr>
+                    <td>@artwork.Title</td>
+                    <td>@artwork.Artist</td>
+                    <td>@artwork.Type</td>
+                    <td>@(artwork.Year?.ToString("yyyy") ?? "-")</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" @onclick="() => Edit(artwork.Id)">Modifica</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(artwork.Id)">Elimina</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Artwork>? artworks;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+    private async Task LoadData() => artworks = await ApiClient.GetArtworksAsync();
+    private void CreateNew() => NavigationManager.NavigateTo("/artworks/edit");
+    private void Edit(Guid id) => NavigationManager.NavigateTo($"/artworks/edit/{id}");
+
+    private async Task Delete(Guid id)
+    {
+        await ApiClient.DeleteArtworkAsync(id);
+        await LoadData();
+    }
+}

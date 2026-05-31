@@ -1,67 +1,72 @@
 ﻿using ClassModels;
-using Microsoft.AspNetCore.Http.HttpResults;
 using MuseoCivicoAurora.Service;
 
 namespace MuseoCivicoAurora.Endpoints;
 
 public static class TicketsEndpoint
 {
-    public static IEndpointRouteBuilder MapTicketsEndpoint(
-                                                this IEndpointRouteBuilder app)
+    public static void MapTicketsEndpoint(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/tickets");
+        var group = app.MapGroup("/api/tickets").WithTags("Tickets").DisableAntiforgery();
 
-        group.MapGet("", GetAllAsync);
-        group.MapGet("{id:guid}", GetByIdAsync);
-        group.MapPost("", AddAsync);
-        group.MapPut("{id:guid}", UpdateAsync);
-        group.MapDelete("{id:guid}", DeleteAsync);
+        group.MapGet("/", async (ITicketsService service) =>
+        {
+            var tickets = await service.GetTicketsAsync();
+            return Results.Ok(tickets);
+        });
 
-        return app;
-    }
+        group.MapGet("/{id:guid}", async (Guid id, ITicketsService service) =>
+        {
+            var ticket = await service.GetTicketByIdAsync(id);
+            return ticket is null
+                ? Results.NotFound()
+                : Results.Ok(ticket);
+        });
 
-    private static async Task<Ok<IEnumerable<Ticket>>> GetAllAsync(TicketsService service)
-    {
-        var tickets = await service.GetTicketsAsync();
+        group.MapPost("/", async (Ticket ticket, ITicketsService service) =>
+        {
+            try
+            {
+                await service.AddTicketAsync(ticket);
+                return Results.Created($"/api/tickets/{ticket.Id}", ticket);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-        return TypedResults.Ok(tickets);
-    }
+        group.MapPut("/{id:guid}", async (Guid id, Ticket ticket, ITicketsService service) =>
+        {
+            try
+            {
+                var existing = await service.GetTicketByIdAsync(id);
+                if (existing is null) return Results.NotFound();
 
-    private static async Task<Results<NotFound, Ok<Ticket>>> GetByIdAsync(Guid id, TicketsService service)
-    {
-        var ticket = await service.GetTicketByIdAsync(id);
-        if (ticket is null)
-            return TypedResults.NotFound();
+                ticket.Id = id;
+                await service.UpdateTicketAsync(ticket);
+                return Results.Ok(ticket);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-        return TypedResults.Ok(ticket);
-    }
+        group.MapDelete("/{id:guid}", async (Guid id, ITicketsService service) =>
+        {
+            try
+            {
+                var existing = await service.GetTicketByIdAsync(id);
+                if (existing is null) return Results.NotFound();
 
-    private static async Task<Created<Ticket>> AddAsync(Ticket ticket, TicketsService service)
-    {
-        await service.AddTicketAsync(ticket);
-
-        return TypedResults.Created($"/api/tickets/{ticket.Id}", ticket);
-    }
-
-    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Ticket ticket, TicketsService service)
-    {
-        var found = await service.GetTicketByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.UpdateTicketAsync(ticket);
-
-        return TypedResults.NoContent();
-    }
-
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, TicketsService service)
-    {
-        var found = await service.GetTicketByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.DeleteTicketByIdAsync(id);
-
-        return TypedResults.NoContent();
+                await service.DeleteTicketByIdAsync(id);
+                return Results.NoContent();
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
     }
 }

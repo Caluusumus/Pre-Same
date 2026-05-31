@@ -1,67 +1,72 @@
 ﻿using ClassModels;
-using Microsoft.AspNetCore.Http.HttpResults;
 using MuseoCivicoAurora.Service;
 
 namespace MuseoCivicoAurora.Endpoints;
 
 public static class ToursEndpoint
 {
-    public static IEndpointRouteBuilder MapToursEndpoint(
-                                                this IEndpointRouteBuilder app)
+    public static void MapToursEndpoint(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/tours");
+        var group = app.MapGroup("/api/tours").WithTags("Tours").DisableAntiforgery();
 
-        group.MapGet("", GetAllAsync);
-        group.MapGet("{id:guid}", GetByIdAsync);
-        group.MapPost("", AddAsync);
-        group.MapPut("{id:guid}", UpdateAsync);
-        group.MapDelete("{id:guid}", DeleteAsync);
+        group.MapGet("/", async (IToursService service) =>
+        {
+            var tours = await service.GetToursAsync();
+            return Results.Ok(tours);
+        });
 
-        return app;
-    }
+        group.MapGet("/{id:guid}", async (Guid id, IToursService service) =>
+        {
+            var tour = await service.GetTourByIdAsync(id);
+            return tour is null
+                ? Results.NotFound()
+                : Results.Ok(tour);
+        });
 
-    private static async Task<Ok<IEnumerable<Tour>>> GetAllAsync(ToursService service)
-    {
-        var tour = await service.GetToursAsync();
+        group.MapPost("/", async (Tour tour, IToursService service) =>
+        {
+            try
+            {
+                await service.AddTourAsync(tour);
+                return Results.Created($"/api/tours/{tour.Id}", tour);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-        return TypedResults.Ok(tour);
-    }
+        group.MapPut("/{id:guid}", async (Guid id, Tour tour, IToursService service) =>
+        {
+            try
+            {
+                var existing = await service.GetTourByIdAsync(id);
+                if (existing is null) return Results.NotFound();
 
-    private static async Task<Results<NotFound, Ok<Tour>>> GetByIdAsync(Guid id, ToursService service)
-    {
-        var tour = await service.GetTourByIdAsync(id);
-        if (tour is null)
-            return TypedResults.NotFound();
+                tour.Id = id;
+                await service.UpdateTourAsync(tour);
+                return Results.Ok(tour);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-        return TypedResults.Ok(tour);
-    }
+        group.MapDelete("/{id:guid}", async (Guid id, IToursService service) =>
+        {
+            try
+            {
+                var existing = await service.GetTourByIdAsync(id);
+                if (existing is null) return Results.NotFound();
 
-    private static async Task<Created<Tour>> AddAsync(Tour tour, ToursService service)
-    {
-        await service.AddTourAsync(tour);
-
-        return TypedResults.Created($"/api/tours/{tour.Id}", tour);
-    }
-
-    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Tour tour, ToursService service)
-    {
-        var found = await service.GetTourByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.UpdateTourAsync(tour);
-
-        return TypedResults.NoContent();
-    }
-
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, ToursService service)
-    {
-        var found = await service.GetTourByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.DeleteTourByIdAsync(id);
-
-        return TypedResults.NoContent();
+                await service.DeleteTourByIdAsync(id);
+                return Results.NoContent();
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
     }
 }

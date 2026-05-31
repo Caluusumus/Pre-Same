@@ -1,0 +1,61 @@
+﻿@page "/bookings"
+@using ClassModels
+@using MuseoCivicoAurora.Client.Services
+@inject BookingApiClient ApiClient
+@inject NavigationManager NavigationManager
+@rendermode InteractiveWebAssembly
+
+<h3>Lista Prenotazioni</h3>
+
+<button class="btn btn-primary mb-3" @onclick="CreateNew">Nuova Prenotazione</button>
+
+@if (bookings == null)
+{
+    <p><em>Caricamento in corso...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Cognome</th>
+                <th>Email</th>
+                <th>Partecipanti</th>
+                <th>Stato</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var booking in bookings)
+            {
+                <tr>
+                    <td>@booking.FirstName</td>
+                    <td>@booking.LastName</td>
+                    <td>@booking.Email</td>
+                    <td>@booking.ParticipantsCount</td>
+                    <td>@booking.Status</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" @onclick="() => Edit(booking.Id)">Modifica</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(booking.Id)">Elimina</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Booking>? bookings;
+
+    protected override async Task OnInitializedAsync() => await LoadData();
+    private async Task LoadData() => bookings = await ApiClient.GetBookingsAsync();
+    private void CreateNew() => NavigationManager.NavigateTo("/bookings/edit");
+    private void Edit(Guid id) => NavigationManager.NavigateTo($"/bookings/edit/{id}");
+
+    private async Task Delete(Guid id)
+    {
+        await ApiClient.DeleteBookingAsync(id);
+        await LoadData();
+    }
+}

@@ -1,67 +1,94 @@
 ﻿using ClassModels;
-using Microsoft.AspNetCore.Http.HttpResults;
 using MuseoCivicoAurora.Service;
 
 namespace MuseoCivicoAurora.Endpoints;
 
-public static class ExhibitionsEndpoint
+public static class ExhibitionsEndpoints
 {
-    public static IEndpointRouteBuilder MapExhibitionsEndpoints(
-                                                this IEndpointRouteBuilder app)
+    public static void MapExhibitionsEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("api/exhibitions");
+        // ==========================================
+        // 1. ENDPOINT PER LE MOSTRE (EXHIBITIONS)
+        // ==========================================
+        var group = app.MapGroup("/api/exhibitions").WithTags("Exhibitions").DisableAntiforgery();
 
-        group.MapGet("", GetAllAsync);
-        group.MapGet("{id:guid}", GetByIdAsync);
-        group.MapPost("", AddAsync);
-        group.MapPut("{id:guid}", UpdateAsync);
-        group.MapDelete("{id:guid}", DeleteAsync);
+        group.MapGet("/", async (IExhibitionsService service) =>
+        {
+            var exhibitions = await service.GetExhibitionsAsync();
+            return Results.Ok(exhibitions);
+        });
 
-        return app;
-    }
+        group.MapGet("/{id:guid}", async (Guid id, IExhibitionsService service) =>
+        {
+            var exhibition = await service.GetExhibitionByIdAsync(id);
+            return exhibition is null
+                ? Results.NotFound(new { message = $"Mostra con id {id} non trovata." })
+                : Results.Ok(exhibition);
+        });
 
-    private static async Task<Ok<IEnumerable<Exhibition>>> GetAllAsync(ExhibitionsService service)
-    {
-        var exhibitions = await service.GetExhibitionsAsync();
+        group.MapPost("/", async (Exhibition exhibition, IExhibitionsService service) =>
+        {
+            try
+            {
+                // Nei tuoi servizi originali AddExhibitionAsync non ritorna un valore, 
+                // quindi aspettiamo che finisca e poi ritorniamo l'oggetto ricevuto.
+                await service.AddExhibitionAsync(exhibition);
+                return Results.Created($"/api/exhibitions/{exhibition.Id}", exhibition);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-        return TypedResults.Ok(exhibitions);
-    }
+        group.MapPut("/{id:guid}", async (Guid id, Exhibition exhibition, IExhibitionsService service) =>
+        {
+            try
+            {
+                // Prima controlliamo se la mostra esiste davvero
+                var existing = await service.GetExhibitionByIdAsync(id);
+                if (existing is null)
+                {
+                    return Results.NotFound(new { message = $"Mostra con id {id} non trovata." });
+                }
 
-    private static async Task<Results<NotFound, Ok<Exhibition>>> GetByIdAsync(Guid id, ExhibitionsService service)
-    {
-        var exhibition = await service.GetExhibitionByIdAsync(id);
-        if (exhibition is null)
-            return TypedResults.NotFound();
+                // Assicuriamoci che l'ID dell'oggetto corrisponda a quello dell'URL
+                exhibition.Id = id;
 
-        return TypedResults.Ok(exhibition);
-    }
+                await service.UpdateExhibitionAsync(exhibition);
+                
+                return Results.Ok(exhibition);
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-    private static async Task<Created<Exhibition>> AddAsync(Exhibition exhibition, ExhibitionsService service)
-    {
-        await service.AddExhibitionAsync(exhibition);
+        group.MapDelete("/{id:guid}", async (Guid id, IExhibitionsService service) =>
+        {
+            try
+            {
+                var existing = await service.GetExhibitionByIdAsync(id);
+                if (existing is null)
+                {
+                    return Results.NotFound(new { message = $"Mostra con id {id} non trovata." });
+                }
 
-        return TypedResults.Created($"/api/exhibitions/{exhibition.Id}", exhibition);
-    }
+                await service.DeleteExhibitionByIdAsync(id);
+                return Results.NoContent();
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
 
-    private static async Task<Results<NoContent, NotFound>> UpdateAsync(Guid id, Exhibition exhibition, ExhibitionsService service)
-    {
-        var found = await service.GetExhibitionByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.UpdateExhibitionAsync(exhibition);
-
-        return TypedResults.NoContent();
-    }
-
-    private static async Task<Results<NoContent, NotFound>> DeleteAsync(Guid id, ExhibitionsService service)
-    {
-        var found = await service.GetExhibitionByIdAsync(id);
-        if (found is null)
-            return TypedResults.NotFound();
-
-        await service.DeleteExhibitionByIdAsync(id);
-
-        return TypedResults.NoContent();
+        // ==========================================
+        // 2. EVENTUALI ENDPOINT SECONDARI (ES. MENU A TENDINA)
+        // ==========================================
+        // Se in futuro ti servirà recuperare dati correlati per i menu a tendina 
+        // (ad esempio, uno stato o delle categorie), potrai aggiungerli qui sotto
+        // esattamente come nel tuo esempio di "ApplicationDbContext".
     }
 }
