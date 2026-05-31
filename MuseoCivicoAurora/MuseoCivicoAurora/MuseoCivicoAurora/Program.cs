@@ -95,6 +95,10 @@ app.MapRazorComponents<App>()
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
 
+app.MapArtWorksEndpoint();
 app.MapExhibitionsEndpoints();
+app.MapToursEndpoint();
+app.MapTicketsEndpoint();
+app.MapBookingsEndpoints();
 
 app.Run();
