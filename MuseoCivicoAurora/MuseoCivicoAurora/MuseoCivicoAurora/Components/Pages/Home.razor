@@ -1,7 +1,99 @@
 ﻿@page "/"
+@rendermode InteractiveWebAssembly
+@using ClassModels
+@inject HttpClient Http
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Home - Museo Civico Aurora</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="hero-section text-center d-flex align-items-center justify-content-center"
+     style="background-color: #f3a446; height: 60vh;">
+    <div class="px-3">
+        <h1 class="display-1 fw-bold mb-4 text-dark" style="text-transform: uppercase; letter-spacing: 3px;">Scopri l'Arte</h1>
+        <p class="lead mb-5 fs-3 text-dark">Un viaggio senza tempo tra capolavori e mostre esclusive.</p>
 
-Welcome to your new app.
+        <a href="/tickets" class="btn btn-lg fw-bold rounded-0 shadow-lg text-white" style="background-color: #000; padding: 15px 40px; font-size: 1.1rem; letter-spacing: 1px;">PREPARA LA TUA VISITA</a>
+    </div>
+</div>
+
+<div class="container my-5 pt-4">
+    <div class="text-center mb-5">
+        <h2 class="display-5 fw-bold text-uppercase">I Nostri Capolavori</h2>
+        <div style="height: 4px; width: 60px; background-color: #f3a446; margin: 20px auto;"></div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ApiErrorMessage))
+    {
+        <div class="alert alert-danger text-center mb-4">
+            <strong>Errore di caricamento:</strong> @ApiErrorMessage
+        </div>
+    }
+
+    @if (topArtworks == null && string.IsNullOrEmpty(ApiErrorMessage))
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Caricamento...</span>
+            </div>
+        </div>
+    }
+    else if (topArtworks != null && !topArtworks.Any())
+    {
+        <p class="text-center text-muted">Nessuna opera presente nel database.</p>
+    }
+    else if (topArtworks != null)
+    {
+        <div class="row g-4">
+            @foreach (var artwork in topArtworks)
+            {
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 rounded-0 shadow-sm" style="transition: transform 0.3s; cursor: pointer;" onclick="location.href='/artworks/details/@artwork.Id'">
+                        <div style="height: 350px; overflow: hidden; background-color: #f8f9fa;">
+                            @if (!string.IsNullOrWhiteSpace(artwork.Image))
+                            {
+                                <img src="@artwork.Image" class="w-100 h-100" style="object-fit: cover;" alt="@artwork.Title">
+                            }
+                            else
+                            {
+                                <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
+                                    Nessuna immagine
+                                </div>
+                            }
+                        </div>
+                        <div class="card-body bg-white text-center pt-4">
+                            <h4 class="card-title fw-bold text-uppercase mb-1">@artwork.Title</h4>
+                            <p class="text-muted fst-italic mb-3">di @(string.IsNullOrWhiteSpace(artwork.Artist) ? "Autore Ignoto" : artwork.Artist)</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="/artworks" class="btn btn-outline-dark rounded-0 fw-bold px-4 py-2">VAI A TUTTA LA COLLEZIONE</a>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Artwork>? topArtworks;
+    private string ApiErrorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // NOTA: Aggiunto lo slash iniziale /api/artworks
+            var allArtworks = await Http.GetFromJsonAsync<List<Artwork>>("/api/artworks");
+
+            if (allArtworks != null)
+            {
+                topArtworks = allArtworks.Take(3).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Se la conversione JSON fallisce, ora te lo stampa a schermo!
+            ApiErrorMessage = ex.Message;
+        }
+    }
+}

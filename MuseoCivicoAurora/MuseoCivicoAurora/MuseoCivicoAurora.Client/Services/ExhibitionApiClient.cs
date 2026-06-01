@@ -37,4 +37,5 @@ public class ExhibitionApiClient
     {
         await _httpClient.DeleteAsync($"api/exhibitions/{id}");
     }
+
 }

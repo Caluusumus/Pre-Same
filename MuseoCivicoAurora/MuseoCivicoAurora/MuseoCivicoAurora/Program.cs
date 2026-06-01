@@ -64,16 +64,12 @@ builder.Services.AddRazorComponents()
 // Assicurati di avere questo in cima
 
 // Registra l'HttpClient in modo che il server possa chiamare le sue stesse API
-builder.Services.AddHttpClient<ExhibitionApiClient>(client =>
-{
-    // Il server chiama se stesso. Sostituisci la porta con quella che vedi
-    // nel file launchSettings.json (es. https://localhost:7215)
-    client.BaseAddress = new Uri("https://localhost:7215");
-});
+builder.Services.AddHttpClient<ExhibitionApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
 builder.Services.AddHttpClient<ArtworkApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
 builder.Services.AddHttpClient<BookingApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
 builder.Services.AddHttpClient<TicketApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
 builder.Services.AddHttpClient<TourApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7215") });
 
 
 var app = builder.Build();

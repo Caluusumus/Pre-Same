@@ -1,0 +1,186 @@
+﻿@page "/exhibitions/details/{Id:guid}"
+@rendermode InteractiveWebAssembly
+@using ClassModels
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+@if (exhibition == null)
+{
+    <p><em>Caricamento dettagli mostra in corso...</em></p>
+}
+else
+{
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h2 class="card-title text-primary">@exhibition.Title</h2>
+            <p class="text-muted">Dal @exhibition.StartDate.ToString("dd/MM/yyyy") al @exhibition.EndDate.ToString("dd/MM/yyyy")</p>
+            <p><strong>Stato:</strong> @exhibition.Status</p>
+            @if (!string.IsNullOrEmpty(exhibition.Description))
+            {
+                <p>@exhibition.Description</p>
+            }
+            <a href="/exhibitions" class="btn btn-outline-secondary btn-sm">Torna alla lista</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h4 class="mb-0">Opere Esposte (@exhibition.Artworks.Count)</h4>
+        </div>
+        <div class="card-body">
+
+            @if (exhibition.Artworks.Any())
+            {
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Titolo</th>
+                            <th>Autore</th>
+                            <th>Anno</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var artwork in exhibition.Artworks)
+                        {
+                            <tr>
+                                <td><strong>@artwork.Title</strong></td>
+                                <td>@artwork.Artist</td>
+                                <td>@(artwork.Year?.ToString("yyyy") ?? "-")</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => RimuoviOpera(artwork.Id)">
+                                        Rimuovi da questa Mostra
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="alert alert-info">Nessuna opera è stata ancora associata a questa mostra.</div>
+            }
+
+            <hr class="my-4" />
+
+            <h5>Aggiungi un'opera alla mostra</h5>
+
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <div class="alert alert-danger">@ErrorMessage</div>
+            }
+
+            <div class="row align-items-end">
+                <div class="col-md-8">
+                    <label class="form-label">Seleziona un'opera dall'archivio:</label>
+                    <select class="form-select" @bind="selectedArtworkId">
+                        <option value="@Guid.Empty">-- Scegli un'opera --</option>
+                        @if (allArtworks != null)
+                        {
+                            // Filtriamo le opere per mostrare solo quelle NON ANCORA in questa mostra
+                            var opereDisponibili = allArtworks.Where(a => !exhibition.Artworks.Any(ea => ea.Id == a.Id));
+
+                            foreach (var art in opereDisponibili)
+                            {
+                                <option value="@art.Id">@art.Title (di @art.Artist)</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-success w-100" @onclick="AggiungiOpera" disabled="@(selectedArtworkId == Guid.Empty)">
+                        Collega Opera
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private Exhibition? exhibition;
+    private List<Artwork>? allArtworks;
+
+    private Guid selectedArtworkId = Guid.Empty;
+    private string ErrorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CaricaDati();
+    }
+
+    private async Task CaricaDati()
+    {
+        try
+        {
+            // Scarichiamo la mostra (che include già la lista delle sue opere grazie alla JOIN Dapper)
+            exhibition = await Http.GetFromJsonAsync<Exhibition>($"api/exhibitions/{Id}");
+
+            // Scarichiamo TUTTE le opere del museo per popolare il menu a tendina
+            allArtworks = await Http.GetFromJsonAsync<List<Artwork>>("api/artworks");
+
+            // Resettiamo la selezione e gli errori
+            selectedArtworkId = Guid.Empty;
+            ErrorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore di caricamento: {ex.Message}";
+        }
+    }
+
+    private async Task AggiungiOpera()
+    {
+        if (selectedArtworkId == Guid.Empty) return;
+
+        ErrorMessage = string.Empty;
+        try
+        {
+            // Chiamiamo il nostro nuovo Endpoint POST
+            var response = await Http.PostAsync($"api/exhibitions/{Id}/artworks/{selectedArtworkId}", null);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Ricarichiamo i dati per aggiornare la tabella visiva
+                await CaricaDati();
+            }
+            else
+            {
+                ErrorMessage = "Errore durante il collegamento dell'opera.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore di rete: {ex.Message}";
+        }
+    }
+
+    private async Task RimuoviOpera(Guid artworkId)
+    {
+        ErrorMessage = string.Empty;
+        try
+        {
+            // Chiamiamo il nostro nuovo Endpoint DELETE
+            var response = await Http.DeleteAsync($"api/exhibitions/{Id}/artworks/{artworkId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Ricarichiamo i dati per aggiornare la tabella visiva
+                await CaricaDati();
+            }
+            else
+            {
+                ErrorMessage = "Errore durante la rimozione dell'opera.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore di rete: {ex.Message}";
+        }
+    }
+}

@@ -49,7 +49,22 @@ public class ExhibitionsService : IExhibitionsService
             WHERE
                 Id = @id;
             """;
-        return await connection.QueryFirstOrDefaultAsync<Exhibition>(query, new { id });
+        var exhibition = await connection.QueryFirstOrDefaultAsync<Exhibition>(query, new { id });
+
+        if (exhibition != null)
+        {
+            const string queryOpere = """
+            SELECT Id, Title, Artist, Year, Type, Description, Image, ExhibitionId
+            FROM artworks a
+            INNER JOIN exhibition_artworks ea ON a.Id = ea.ArtworkId
+            WHERE ea.ExhibitionId = @id;
+        """;
+
+            var artworks = await connection.QueryAsync<Artwork>(queryOpere, new { id });
+            exhibition.Artworks = artworks.ToList();
+        }
+
+        return exhibition;
     }
 
     public async Task AddExhibitionAsync(Exhibition exhibition)
@@ -111,5 +126,30 @@ public class ExhibitionsService : IExhibitionsService
                 Id = @id;
             """;
         await connection.ExecuteAsync(query, new { id });
+    }
+
+    public async Task AddArtworkToExhibitionAsync(Guid exhibitionId, Guid artworkId)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+
+        // INSERT IGNORE previene errori se il collegamento esiste già
+        const string sql = """
+        INSERT IGNORE INTO exhibition_artworks (ExhibitionId, ArtworkId) 
+        VALUES (@exhibitionId, @artworkId);
+    """;
+
+        await connection.ExecuteAsync(sql, new { exhibitionId, artworkId });
+    }
+
+    public async Task RemoveArtworkFromExhibitionAsync(Guid exhibitionId, Guid artworkId)
+    {
+        await using var connection = new MySqlConnection(_connectionString);
+
+        const string sql = """
+        DELETE FROM exhibition_artworks 
+        WHERE ExhibitionId = @exhibitionId AND ArtworkId = @artworkId;
+    """;
+
+        await connection.ExecuteAsync(sql, new { exhibitionId, artworkId });
     }
 }

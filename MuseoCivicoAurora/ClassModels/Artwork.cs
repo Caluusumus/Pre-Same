@@ -9,5 +9,4 @@ public class Artwork
     public string? Description { get; set; }
     public string? Type { get; set; }
     public string? Image { get; set; }
-    public Guid? ExhibitionId { get; set; }
 }

@@ -44,17 +44,6 @@ else
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Mostra di appartenenza (Opzionale):</label>
-            <InputSelect TValue="Guid?" class="form-control" @bind-Value="artwork.ExhibitionId">
-                <option value="">-- Nessuna mostra --</option>
-                @foreach (var exh in exhibitions)
-                {
-                    <option value="@exh.Id">@exh.Title</option>
-                }
-            </InputSelect>
-        </div>
-
-        <div class="mb-3">
             <label class="form-label">Descrizione:</label>
             <InputTextArea class="form-control" @bind-Value="artwork.Description" />
         </div>

@@ -25,8 +25,7 @@ public class ArtworksService : IArtworksService
                 Year,
                 Type,
                 Description,
-                Image,
-                ExhibitionId
+                Image
             FROM
                 artworks;
             """;
@@ -44,8 +43,7 @@ public class ArtworksService : IArtworksService
                 Year,
                 Type,
                 Description,
-                Image,
-                ExhibitionId
+                Image
             FROM
                 artworks
             WHERE
@@ -67,8 +65,7 @@ public class ArtworksService : IArtworksService
                     Year,
                     Type,
                     Description,
-                    Image,
-                    ExhibitionId
+                    Image
                 )
             VALUES 
                 (
@@ -78,8 +75,7 @@ public class ArtworksService : IArtworksService
                     @Year,
                     @Type,
                     @Description,
-                    @Image,
-                    @ExhibitionId
+                    @Image
                 );
             """;
         await connection.ExecuteAsync(query, artwork);
@@ -97,9 +93,8 @@ public class ArtworksService : IArtworksService
                 Year = @Year,
                 Type = @Type,
                 Description = @Description,
-                Image = @Image,
-                ExhibitionId = @ExhibitionId
-            WHERE 
+                Image = @Image
+                WHERE 
                 Id = @Id;
             """;
         await connection.ExecuteAsync(query, artwork);

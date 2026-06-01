@@ -84,11 +84,30 @@ public static class ExhibitionsEndpoints
             }
         });
 
-        // ==========================================
-        // 2. EVENTUALI ENDPOINT SECONDARI (ES. MENU A TENDINA)
-        // ==========================================
-        // Se in futuro ti servirà recuperare dati correlati per i menu a tendina 
-        // (ad esempio, uno stato o delle categorie), potrai aggiungerli qui sotto
-        // esattamente come nel tuo esempio di "ApplicationDbContext".
+        group.MapPost("/{id:guid}/artworks/{artworkId:guid}", async (Guid id, Guid artworkId, IExhibitionsService service) =>
+        {
+            try
+            {
+                await service.AddArtworkToExhibitionAsync(id, artworkId);
+                return Results.Ok();
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
+
+        group.MapDelete("/{id:guid}/artworks/{artworkId:guid}", async (Guid id, Guid artworkId, IExhibitionsService service) =>
+        {
+            try
+            {
+                await service.RemoveArtworkFromExhibitionAsync(id, artworkId);
+                return Results.NoContent();
+            }
+            catch (Exception ex)
+            {
+                return Results.BadRequest(new { message = ex.Message });
+            }
+        });
     }
 }

@@ -1,0 +1,84 @@
+﻿@page "/artworks/details/{Id:guid}"
+@rendermode InteractiveWebAssembly
+@using ClassModels
+@inject HttpClient Http
+
+@if (artwork == null)
+{
+    <p><em>Caricamento dettagli opera in corso...</em></p>
+}
+else
+{
+    <div class="container mt-4">
+        <div class="row">
+
+            <div class="col-md-5 mb-4 text-center">
+                @if (!string.IsNullOrWhiteSpace(artwork.Image))
+                {
+                    <img src="@artwork.Image" alt="@artwork.Title" class="img-fluid rounded shadow" style="max-height: 600px; object-fit: contain;" />
+                }
+                else
+                {
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded shadow" style="height: 400px; width: 100%;">
+                        <span class="text-muted">Nessuna immagine disponibile</span>
+                    </div>
+                }
+            </div>
+
+            <div class="col-md-7">
+                <h1 class="text-primary mb-2">@artwork.Title</h1>
+                <h4 class="text-secondary mb-4">di @(string.IsNullOrWhiteSpace(artwork.Artist) ? "Autore Ignoto" : artwork.Artist)</h4>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <table class="table table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <th scope="row" class="text-muted" style="width: 150px;">Tipologia</th>
+                                    <td>@(string.IsNullOrWhiteSpace(artwork.Type) ? "Non specificata" : artwork.Type)</td>
+                                </tr>
+                                <tr>
+                                    <th scope="row" class="text-muted">Anno</th>
+                                    <td>@(artwork.Year?.ToString("yyyy") ?? "Non specificato")</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(artwork.Description))
+                {
+                    <h5 class="text-muted border-bottom pb-2">Descrizione dell'opera</h5>
+                    <p class="mt-3" style="line-height: 1.8;">@artwork.Description</p>
+                }
+
+                <div class="mt-5">
+                    <a href="/artworks" class="btn btn-outline-secondary">Torna alla lista delle Opere</a>
+                    <a href="/artworks/edit/@artwork.Id" class="btn btn-warning ms-2">Modifica Dati</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private Artwork? artwork;
+    private string ErrorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Scarichiamo l'opera dal server tramite l'Id
+            artwork = await Http.GetFromJsonAsync<Artwork>($"api/artworks/{Id}");
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore durante il caricamento: {ex.Message}";
+        }
+    }
+}

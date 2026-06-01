@@ -5,43 +5,54 @@
 @inject NavigationManager NavigationManager
 @rendermode InteractiveWebAssembly
 
-<h3>Lista Opere</h3>
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
+        <h1 class="display-4 fw-bold text-uppercase m-0">Collezione Opere</h1>
+        <a href="/artworks/edit" class="btn btn-primary btn-lg">+ Nuova Opera</a>
+    </div>
 
-<button class="btn btn-primary mb-3" @onclick="CreateNew">Aggiungi Nuova Opera</button>
-
-@if (artworks == null)
-{
-    <p><em>Caricamento in corso...</em></p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Titolo</th>
-                <th>Autore</th>
-                <th>Tipologia</th>
-                <th>Anno</th>
-                <th>Azioni</th>
-            </tr>
-        </thead>
-        <tbody>
+    @if (artworks == null)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-dark"></div></div>
+    }
+    else if (!artworks.Any())
+    {
+        <p class="lead text-muted">Nessuna opera presente. Aggiungine una!</p>
+    }
+    else
+    {
+        <div class="row g-4">
             @foreach (var artwork in artworks)
             {
-                <tr>
-                    <td>@artwork.Title</td>
-                    <td>@artwork.Artist</td>
-                    <td>@artwork.Type</td>
-                    <td>@(artwork.Year?.ToString("yyyy") ?? "-")</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning" @onclick="() => Edit(artwork.Id)">Modifica</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(artwork.Id)">Elimina</button>
-                    </td>
-                </tr>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-0 shadow-sm rounded-0">
+                        <div style="height: 300px; background-color: #eaeaea; overflow: hidden;" class="position-relative">
+                            @if (!string.IsNullOrWhiteSpace(artwork.Image))
+                            {
+                                <img src="@artwork.Image" class="w-100 h-100" style="object-fit: cover;" alt="@artwork.Title">
+                            }
+                            else
+                            {
+                                <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">No Immagine</div>
+                            }
+                        </div>
+
+                        <div class="card-body bg-white p-4 d-flex flex-column">
+                            <h4 class="fw-bold text-uppercase mb-1">@artwork.Title</h4>
+                            <p class="fst-italic text-muted mb-3">di @(string.IsNullOrWhiteSpace(artwork.Artist) ? "Autore Ignoto" : artwork.Artist)</p>
+
+                            <div class="mt-auto pt-3 border-top d-flex gap-2">
+                                <a href="/artworks/details/@artwork.Id" class="btn btn-info flex-grow-1">Dettagli</a>
+                                <a href="/artworks/edit/@artwork.Id" class="btn btn-warning"><i class="bi bi-pencil"></i> Modifica</a>
+                                <button class="btn btn-danger" @onclick="() => Delete(artwork.Id)"><i class="bi bi-trash"></i> X</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             }
-        </tbody>
-    </table>
-}
+        </div>
+    }
+</div>
 
 @code {
     private List<Artwork>? artworks;

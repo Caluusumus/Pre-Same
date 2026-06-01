@@ -9,5 +9,7 @@ namespace MuseoCivicoAurora.Service
         Task<Exhibition?> GetExhibitionByIdAsync(Guid id);
         Task<IEnumerable<Exhibition>> GetExhibitionsAsync();
         Task UpdateExhibitionAsync(Exhibition exhibition);
+        Task AddArtworkToExhibitionAsync(Guid exhibitionId, Guid artworkId);
+        Task RemoveArtworkFromExhibitionAsync(Guid exhibitionId, Guid artworkId);
     }
 }
