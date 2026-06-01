@@ -1,45 +1,62 @@
 ﻿@page "/bookings/edit"
 @page "/bookings/edit/{Id:guid}"
-@using ClassModels
-@using MuseoCivicoAurora.Client.Services
-@inject BookingApiClient ApiClient
-@inject NavigationManager NavigationManager
 @rendermode InteractiveWebAssembly
+@using ClassModels
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
 
 <h3>@(Id == null ? "Nuova Prenotazione" : "Modifica Prenotazione")</h3>
 
-@if (booking == null)
+@if (!string.IsNullOrEmpty(ErrorMessage))
 {
-    <p><em>Caricamento...</em></p>
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+@if (tours == null)
+{
+    <p><em>Caricamento dei dati in corso...</em></p>
 }
 else
 {
-    <EditForm Model="booking" OnValidSubmit="SaveBooking">
+    <EditForm Model="booking" OnValidSubmit="SalvaPrenotazione" FormName="formPrenotazione">
         <DataAnnotationsValidator />
+        <ValidationSummary style="color: red; font-weight: bold; margin-bottom: 15px;" />
 
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label class="form-label">Nome</label>
+                <label class="form-label">Nome:</label>
                 <InputText class="form-control" @bind-Value="booking.FirstName" />
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label">Cognome</label>
+                <label class="form-label">Cognome:</label>
                 <InputText class="form-control" @bind-Value="booking.LastName" />
             </div>
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Email</label>
+            <label class="form-label">Email (*):</label>
             <InputText class="form-control" @bind-Value="booking.Email" />
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Numero Partecipanti</label>
+            <label class="form-label">Numero Partecipanti:</label>
             <InputNumber class="form-control" @bind-Value="booking.ParticipantsCount" />
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Stato (es. confirmed, cancelled)</label>
+            <label class="form-label">Visita Guidata Associata (*):</label>
+            <InputSelect TValue="Guid" class="form-control" @bind-Value="booking.TourId">
+                <option value="@Guid.Empty">-- Seleziona una visita --</option>
+                @foreach (var tour in tours)
+                {
+                    <option value="@tour.Id">@tour.Title (@tour.DateTime?.ToString("dd/MM/yyyy HH:mm"))</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Stato:</label>
             <InputSelect class="form-control" @bind-Value="booking.Status">
                 <option value="confirmed">Confermata</option>
                 <option value="cancelled">Annullata</option>
@@ -47,29 +64,82 @@ else
         </div>
 
         <button type="submit" class="btn btn-success">Salva</button>
-        <button type="button" class="btn btn-secondary" @onclick="GoBack">Annulla</button>
+        <a href="/bookings" class="btn btn-secondary">Annulla</a>
     </EditForm>
 }
 
 @code {
-    [Parameter] public Guid? Id { get; set; }
-    private Booking? booking;
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private Booking booking = new Booking { Status = "confirmed", ParticipantsCount = 1 };
+    private List<Tour>? tours;
+    private string ErrorMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        if (Id.HasValue)
-            booking = await ApiClient.GetBookingByIdAsync(Id.Value);
-        else
-            booking = new Booking { Status = "confirmed" };
+        try
+        {
+            tours = await Http.GetFromJsonAsync<List<Tour>>("api/tours");
+
+            if (Id.HasValue)
+            {
+                var fetched = await Http.GetFromJsonAsync<Booking>($"api/bookings/{Id.Value}");
+                if (fetched != null) booking = fetched;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore di caricamento: {ex.Message}";
+        }
     }
 
-    private async Task SaveBooking()
+    private async Task SalvaPrenotazione()
     {
-        if (Id.HasValue) await ApiClient.UpdateBookingAsync(Id.Value, booking!);
-        else await ApiClient.CreateBookingAsync(booking!);
+        ErrorMessage = string.Empty;
 
-        NavigationManager.NavigateTo("/bookings");
+        if (string.IsNullOrWhiteSpace(booking.Email))
+        {
+            ErrorMessage = "L'email è obbligatoria.";
+            return;
+        }
+        if (booking.TourId == Guid.Empty)
+        {
+            ErrorMessage = "Selezionare una Visita Guidata.";
+            return;
+        }
+
+        HttpResponseMessage response;
+        try
+        {
+            if (Id.HasValue)
+            {
+                response = await Http.PutAsJsonAsync($"api/bookings/{Id.Value}", booking);
+            }
+            else
+            {
+                booking.Id = Guid.NewGuid();
+                booking.CreatedAt = DateTime.Now;
+                response = await Http.PostAsJsonAsync("api/bookings", booking);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/bookings");
+            }
+            else
+            {
+                var errorJson = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    using var doc = JsonDocument.Parse(errorJson);
+                    ErrorMessage = doc.RootElement.TryGetProperty("message", out var msg)
+                        ? msg.GetString() ?? "Errore di validazione."
+                        : $"Errore Server 400: {errorJson}";
+                }
+                catch { ErrorMessage = "Errore 400: Il server ha rifiutato il formato dei dati."; }
+            }
+        }
+        catch (Exception ex) { ErrorMessage = $"Errore di rete: {ex.Message}"; }
     }
-
-    private void GoBack() => NavigationManager.NavigateTo("/bookings");
 }

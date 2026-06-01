@@ -7,7 +7,7 @@
 
 <h3>Lista Biglietti</h3>
 
-<button class="btn btn-primary mb-3" @onclick="CreateNew">Emetti Nuovo Biglietto</button>
+<a href="/tickets/edit" class="btn btn-primary mb-3">Emetti Nuovo Biglietto</a>
 
 @if (tickets == null)
 {
@@ -18,7 +18,7 @@ else
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Nome/Acquirente</th>
+                <th>Nome Acquirente</th>
                 <th>Email</th>
                 <th>Tipologia</th>
                 <th>Quantità</th>
@@ -48,13 +48,29 @@ else
 @code {
     private List<Ticket>? tickets;
 
-    protected override async Task OnInitializedAsync() => await LoadData();
-    private async Task LoadData() => tickets = await ApiClient.GetTicketsAsync();
-    private void CreateNew() => NavigationManager.NavigateTo("/tickets/edit");
-    private void Edit(Guid id) => NavigationManager.NavigateTo($"/tickets/edit/{id}");
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        tickets = await ApiClient.GetTicketsAsync();
+    }
+
+    private void CreateNew()
+    {
+        NavigationManager.NavigateTo("/tickets/edit");
+    }
+
+    private void Edit(Guid id)
+    {
+        NavigationManager.NavigateTo($"/tickets/edit/{id}");
+    }
 
     private async Task Delete(Guid id)
     {
+        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
         await ApiClient.DeleteTicketAsync(id);
         await LoadData();
     }

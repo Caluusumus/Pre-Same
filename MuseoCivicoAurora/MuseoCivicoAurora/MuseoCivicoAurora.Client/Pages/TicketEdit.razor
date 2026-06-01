@@ -1,35 +1,46 @@
 ﻿@page "/tickets/edit"
 @page "/tickets/edit/{Id:guid}"
-@using ClassModels
-@using MuseoCivicoAurora.Client.Services
-@inject TicketApiClient ApiClient
-@inject NavigationManager NavigationManager
 @rendermode InteractiveWebAssembly
+@using ClassModels
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager Navigation
 
 <h3>@(Id == null ? "Nuovo Biglietto" : "Modifica Biglietto")</h3>
 
-@if (ticket == null)
+@if (!string.IsNullOrEmpty(ErrorMessage))
 {
-    <p><em>Caricamento...</em></p>
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+@if (exhibitions == null || tours == null)
+{
+    <p><em>Caricamento dei dati in corso...</em></p>
 }
 else
 {
-    <EditForm Model="ticket" OnValidSubmit="SaveTicket">
+    <EditForm Model="ticket" OnValidSubmit="SalvaBiglietto" FormName="formTicket">
         <DataAnnotationsValidator />
+        <ValidationSummary style="color: red; font-weight: bold; margin-bottom: 15px;" />
 
         <div class="mb-3">
-            <label class="form-label">Nome Acquirente</label>
+            <label class="form-label">Nome Acquirente:</label>
             <InputText class="form-control" @bind-Value="ticket.FirstName" />
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Email</label>
+            <label class="form-label">Cognome Acquirente:</label>
+            <InputText class="form-control" @bind-Value="ticket.LastName" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email (*):</label>
             <InputText class="form-control" @bind-Value="ticket.Email" />
         </div>
 
         <div class="row">
             <div class="col-md-4 mb-3">
-                <label class="form-label">Tipologia</label>
+                <label class="form-label">Tipologia:</label>
                 <InputSelect class="form-control" @bind-Value="ticket.Type">
                     <option value="full">Intero</option>
                     <option value="reduced">Ridotto</option>
@@ -37,39 +48,112 @@ else
                 </InputSelect>
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label">Quantità</label>
+                <label class="form-label">Quantità:</label>
                 <InputNumber class="form-control" @bind-Value="ticket.Quantity" />
             </div>
             <div class="col-md-4 mb-3">
-                <label class="form-label">Totale (€)</label>
+                <label class="form-label">Totale (€):</label>
                 <InputNumber class="form-control" @bind-Value="ticket.Total" />
             </div>
         </div>
 
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Mostra di riferimento (Opzionale):</label>
+                <InputSelect TValue="Guid?" class="form-control" @bind-Value="ticket.ExhibitionId">
+                    <option value="">-- Nessuna mostra --</option>
+                    @foreach (var exh in exhibitions)
+                    {
+                        <option value="@exh.Id">@exh.Title</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Visita di riferimento (Opzionale):</label>
+                <InputSelect TValue="Guid?" class="form-control" @bind-Value="ticket.TourId">
+                    <option value="">-- Nessuna visita --</option>
+                    @foreach (var tour in tours)
+                    {
+                        <option value="@tour.Id">@tour.Title</option>
+                    }
+                </InputSelect>
+            </div>
+        </div>
+
         <button type="submit" class="btn btn-success">Salva</button>
-        <button type="button" class="btn btn-secondary" @onclick="GoBack">Annulla</button>
+        <a href="/tickets" class="btn btn-secondary">Annulla</a>
     </EditForm>
 }
 
 @code {
-    [Parameter] public Guid? Id { get; set; }
-    private Ticket? ticket;
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private Ticket ticket = new Ticket { Type = "full", Quantity = 1 };
+    private List<Exhibition>? exhibitions;
+    private List<Tour>? tours;
+    private string ErrorMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        if (Id.HasValue)
-            ticket = await ApiClient.GetTicketByIdAsync(Id.Value);
-        else
-            ticket = new Ticket { Type = "full", Quantity = 1 };
+        try
+        {
+            exhibitions = await Http.GetFromJsonAsync<List<Exhibition>>("api/exhibitions");
+            tours = await Http.GetFromJsonAsync<List<Tour>>("api/tours");
+
+            if (Id.HasValue)
+            {
+                var fetched = await Http.GetFromJsonAsync<Ticket>($"api/tickets/{Id.Value}");
+                if (fetched != null) ticket = fetched;
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Errore di caricamento: {ex.Message}";
+        }
     }
 
-    private async Task SaveTicket()
+    private async Task SalvaBiglietto()
     {
-        if (Id.HasValue) await ApiClient.UpdateTicketAsync(Id.Value, ticket!);
-        else await ApiClient.CreateTicketAsync(ticket!);
+        ErrorMessage = string.Empty;
 
-        NavigationManager.NavigateTo("/tickets");
+        if (string.IsNullOrWhiteSpace(ticket.Email))
+        {
+            ErrorMessage = "L'email è obbligatoria.";
+            return;
+        }
+
+        HttpResponseMessage response;
+        try
+        {
+            if (Id.HasValue)
+            {
+                response = await Http.PutAsJsonAsync($"api/tickets/{Id.Value}", ticket);
+            }
+            else
+            {
+                ticket.Id = Guid.NewGuid();
+                ticket.CreatedAt = DateTime.Now;
+                response = await Http.PostAsJsonAsync("api/tickets", ticket);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/tickets");
+            }
+            else
+            {
+                var errorJson = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    using var doc = JsonDocument.Parse(errorJson);
+                    ErrorMessage = doc.RootElement.TryGetProperty("message", out var msg)
+                        ? msg.GetString() ?? "Errore di validazione."
+                        : $"Errore Server 400: {errorJson}";
+                }
+                catch { ErrorMessage = "Errore 400: Il server ha rifiutato i dati inviati."; }
+            }
+        }
+        catch (Exception ex) { ErrorMessage = $"Errore di rete: {ex.Message}"; }
     }
-
-    private void GoBack() => NavigationManager.NavigateTo("/tickets");
 }

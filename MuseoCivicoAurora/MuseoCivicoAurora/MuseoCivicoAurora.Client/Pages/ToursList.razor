@@ -7,7 +7,7 @@
 
 <h3>Lista Visite Guidate</h3>
 
-<button class="btn btn-primary mb-3" @onclick="CreateNew">Crea Nuova Visita</button>
+<a href="/tours/edit" class="btn btn-primary mb-3">Crea Nuova Visita</a>
 
 @if (tours == null)
 {
@@ -48,13 +48,29 @@ else
 @code {
     private List<Tour>? tours;
 
-    protected override async Task OnInitializedAsync() => await LoadData();
-    private async Task LoadData() => tours = await ApiClient.GetToursAsync();
-    private void CreateNew() => NavigationManager.NavigateTo("/tours/edit");
-    private void Edit(Guid id) => NavigationManager.NavigateTo($"/tours/edit/{id}");
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        tours = await ApiClient.GetToursAsync();
+    }
+
+    private void CreateNew()
+    {
+        NavigationManager.NavigateTo("/tours/edit");
+    }
+
+    private void Edit(Guid id)
+    {
+        NavigationManager.NavigateTo($"/tours/edit/{id}");
+    }
 
     private async Task Delete(Guid id)
     {
+        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
         await ApiClient.DeleteTourAsync(id);
         await LoadData();
     }

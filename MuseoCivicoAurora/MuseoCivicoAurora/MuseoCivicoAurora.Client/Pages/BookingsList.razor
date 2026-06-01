@@ -7,7 +7,7 @@
 
 <h3>Lista Prenotazioni</h3>
 
-<button class="btn btn-primary mb-3" @onclick="CreateNew">Nuova Prenotazione</button>
+<a href="/bookings/edit" class="btn btn-primary mb-3">Nuova Prenotazione</a>
 
 @if (bookings == null)
 {
@@ -48,13 +48,29 @@ else
 @code {
     private List<Booking>? bookings;
 
-    protected override async Task OnInitializedAsync() => await LoadData();
-    private async Task LoadData() => bookings = await ApiClient.GetBookingsAsync();
-    private void CreateNew() => NavigationManager.NavigateTo("/bookings/edit");
-    private void Edit(Guid id) => NavigationManager.NavigateTo($"/bookings/edit/{id}");
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        bookings = await ApiClient.GetBookingsAsync();
+    }
+
+    private void CreateNew()
+    {
+        NavigationManager.NavigateTo("/bookings/edit");
+    }
+
+    private void Edit(Guid id)
+    {
+        NavigationManager.NavigateTo($"/bookings/edit/{id}");
+    }
 
     private async Task Delete(Guid id)
     {
+        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
         await ApiClient.DeleteBookingAsync(id);
         await LoadData();
     }

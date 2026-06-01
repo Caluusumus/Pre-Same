@@ -46,13 +46,29 @@ else
 @code {
     private List<Artwork>? artworks;
 
-    protected override async Task OnInitializedAsync() => await LoadData();
-    private async Task LoadData() => artworks = await ApiClient.GetArtworksAsync();
-    private void CreateNew() => NavigationManager.NavigateTo("/artworks/edit");
-    private void Edit(Guid id) => NavigationManager.NavigateTo($"/artworks/edit/{id}");
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        artworks = await ApiClient.GetArtworksAsync();
+    }
+
+    private void CreateNew()
+    {
+        NavigationManager.NavigateTo("/artworks/edit");
+    }
+
+    private void Edit(Guid id)
+    {
+        NavigationManager.NavigateTo($"/artworks/edit/{id}");
+    }
 
     private async Task Delete(Guid id)
     {
+        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
         await ApiClient.DeleteArtworkAsync(id);
         await LoadData();
     }
