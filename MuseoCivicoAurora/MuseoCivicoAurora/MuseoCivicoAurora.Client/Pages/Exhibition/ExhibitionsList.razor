@@ -8,7 +8,9 @@
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
         <h1 class="display-4 fw-bold text-uppercase m-0">Mostre in Corso</h1>
+        <AuthorizeView Roles="Admin">
         <a href="/exhibitions/edit" class="btn btn-primary btn-lg">+ Nuova Mostra</a>
+        </AuthorizeView>
     </div>
 
     @if (exhibitions == null)
@@ -47,9 +49,17 @@
                             }
 
                             <div class="d-flex gap-2 mt-auto">
-                                <a href="/exhibitions/details/@exhibition.Id" class="btn btn-primary fw-bold px-4">Gestisci Opere</a>
-                                <a href="/exhibitions/edit/@exhibition.Id" class="btn btn-outline-dark fw-bold">Modifica</a>
+                                <AuthorizeView Roles="Admin">
+                                <button class="btn btn-primary fw-bold px-4" @onclick="() => Details(exhibition.Id)">Gestisci Opere</button>
+                                <button class="btn btn-outline-dark fw-bold" @onclick ="() => Edit(exhibition.Id)">Modifica</button>
                                 <button class="btn btn-danger fw-bold" @onclick="() => Delete(exhibition.Id)">Elimina</button>
+                                </AuthorizeView>
+                                <AuthorizeView> 
+                                    <NotAuthorized>
+                                        <button class="btn btn-primary fw-bold px-4" @onclick="() => Details(exhibition.Id)">Dettagli</button>
+                                    </NotAuthorized>
+                                     </AuthorizeView>
+
                             </div>
                         </div>
                     </div>
@@ -80,6 +90,11 @@
     private void Edit(Guid id)
     {
         NavigationManager.NavigateTo($"/exhibitions/edit/{id}");
+    }
+
+    private void Details(Guid id)
+    {
+        NavigationManager.NavigateTo($"/exhibitions/details/{id}");
     }
 
     private async Task Delete(Guid id)

@@ -48,9 +48,11 @@ else
                                 <td>@artwork.Artist</td>
                                 <td>@(artwork.Year?.ToString("yyyy") ?? "-")</td>
                                 <td>
+                                    <AuthorizeView Roles="Admin">
                                     <button class="btn btn-sm btn-outline-danger" @onclick="() => RimuoviOpera(artwork.Id)">
                                         Rimuovi da questa Mostra
                                     </button>
+                                    </AuthorizeView>
                                 </td>
                             </tr>
                         }
@@ -61,7 +63,7 @@ else
             {
                 <div class="alert alert-info">Nessuna opera è stata ancora associata a questa mostra.</div>
             }
-
+            <AuthorizeView Roles="Admin">
             <hr class="my-4" />
 
             <h5>Aggiungi un'opera alla mostra</h5>
@@ -94,7 +96,7 @@ else
                     </button>
                 </div>
             </div>
-
+            </AuthorizeView>
         </div>
     </div>
 }

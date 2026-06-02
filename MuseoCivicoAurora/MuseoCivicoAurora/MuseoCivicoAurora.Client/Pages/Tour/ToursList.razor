@@ -6,9 +6,9 @@
 @rendermode InteractiveWebAssembly
 
 <h3>Lista Visite Guidate</h3>
-
+<AuthorizeView Roles="Admin">
 <a href="/tours/edit" class="btn btn-primary mb-3">Crea Nuova Visita</a>
-
+</AuthorizeView>
 @if (tours == null)
 {
     <p><em>Caricamento in corso...</em></p>
@@ -36,8 +36,15 @@ else
                     <td>@tour.Guide</td>
                     <td>@tour.ParticipantsCount</td>
                     <td>
+                        <AuthorizeView Roles="Admin">
                         <button class="btn btn-sm btn-warning" @onclick="() => Edit(tour.Id)">Modifica</button>
                         <button class="btn btn-sm btn-danger" @onclick="() => Delete(tour.Id)">Elimina</button>
+                        </AuthorizeView>
+                        <AuthorizeView>
+                            <button class="btn btn-sm btn-danger" @onclick="() => CreateNewBooking()">Prenota</button>
+                        </AuthorizeView>
+
+
                     </td>
                 </tr>
             }
@@ -61,6 +68,11 @@ else
     private void CreateNew()
     {
         NavigationManager.NavigateTo("/tours/edit");
+    }
+
+    private void CreateNewBooking()
+    {
+        NavigationManager.NavigateTo("/bookings/edit");
     }
 
     private void Edit(Guid id)

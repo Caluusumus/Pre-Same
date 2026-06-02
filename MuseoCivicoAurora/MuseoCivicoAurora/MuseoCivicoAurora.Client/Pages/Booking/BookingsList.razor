@@ -6,9 +6,9 @@
 @rendermode InteractiveWebAssembly
 
 <h3>Lista Prenotazioni</h3>
-
+<AuthorizeView Roles="Admin">
 <a href="/bookings/edit" class="btn btn-primary mb-3">Nuova Prenotazione</a>
-
+</AuthorizeView>
 @if (bookings == null)
 {
     <p><em>Caricamento in corso...</em></p>
@@ -36,8 +36,10 @@ else
                     <td>@booking.ParticipantsCount</td>
                     <td>@booking.Status</td>
                     <td>
+                    <AuthorizeView Roles="Admin">
                         <button class="btn btn-sm btn-warning" @onclick="() => Edit(booking.Id)">Modifica</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(booking.Id)">Elimina</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => Delete(booking.Id)">Elimina</button>
+                        </AuthorizeView>
                     </td>
                 </tr>
             }

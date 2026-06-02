@@ -54,7 +54,7 @@ else
 
                 <div class="mt-5">
                     <a href="/artworks" class="btn btn-outline-secondary">Torna alla lista delle Opere</a>
-                    <a href="/artworks/edit/@artwork.Id" class="btn btn-warning ms-2">Modifica Dati</a>
+                    <AuthorizeView Roles="Admin"><a href="/artworks/edit/@artwork.Id" class="btn btn-warning ms-2">Modifica Dati</a> </AuthorizeView>
                 </div>
             </div>
 

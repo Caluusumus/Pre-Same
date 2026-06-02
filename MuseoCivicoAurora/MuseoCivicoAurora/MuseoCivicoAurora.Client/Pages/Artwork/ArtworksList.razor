@@ -8,7 +8,9 @@
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
         <h1 class="display-4 fw-bold text-uppercase m-0">Collezione Opere</h1>
+        <AuthorizeView Roles="Admin">
         <a href="/artworks/edit" class="btn btn-primary btn-lg">+ Nuova Opera</a>
+        </AuthorizeView>
     </div>
 
     @if (artworks == null)
