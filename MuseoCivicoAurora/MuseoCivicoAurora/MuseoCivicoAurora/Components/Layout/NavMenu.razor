@@ -1,4 +1,10 @@
-﻿<nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+﻿@using Microsoft.AspNetCore.Identity
+@using MuseoCivicoAurora.Data
+@inject NavigationManager NavigationManager
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
     <div class="container-fluid px-4">
 
         <a class="navbar-brand fw-bold fs-4 text-uppercase" href="" style="letter-spacing: 1px;">
@@ -26,8 +32,29 @@
                 <li class="nav-item me-3">
                     <NavLink class="nav-link text-dark" href="bookings">Prenotazioni</NavLink>
                 </li>
-                <li class="nav-item">
+                <li class="nav-item me-3">
                     <NavLink class="nav-link text-dark" href="tickets">Biglietti</NavLink>
+                </li>
+                <li class="nav-item me-3">
+                    <NavLink class="nav-link text-dark" href="/Account/Login">Login</NavLink>
+                </li>
+                <li class="nav-item me-3">
+                    <NavLink class="nav-link text-dark" href="/Account/Register">Register</NavLink>
+                </li>
+                <li class="nav-item me-3">
+                    <NavLink class="nav-link text-dark" href="auth">auth</NavLink>
+                </li>
+                <li class="nav-item me-3">
+                    <NavLink class="nav-link text-dark" href="Account/Manage">Account</NavLink>
+                </li>
+                <li>
+                <form action="Account/Logout" method="post">
+                    <AntiforgeryToken />
+                    <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                    <button type="submit" class="nav-link">
+                        <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                    </button>
+                </form>
                 </li>
             </ul>
         </div>
@@ -36,10 +63,36 @@
 </nav>
 
 @code {
+    private string? currentUrl;
+    private ApplicationUser? user;
+    private string? username;
     private bool collapseNavMenu = true;
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
     private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
     private void CollapseNavMenu() => collapseNavMenu = true;
+
+    protected override void OnInitialized()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     username = await UserManager.GetUserNameAsync(user);
+    // }
+
 }
 
 @* @implements IDisposable

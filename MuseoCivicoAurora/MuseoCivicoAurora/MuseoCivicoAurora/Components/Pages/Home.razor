@@ -50,7 +50,7 @@
                         <div style="height: 350px; overflow: hidden; background-color: #f8f9fa;">
                             @if (!string.IsNullOrWhiteSpace(artwork.Image))
                             {
-                                <img src="@artwork.Image" class="w-100 h-100" style="object-fit: cover;" alt="@artwork.Title">
+                                <img src="@artwork.Image" class="w-100 h-100" style="object-fit: contain;" alt="@artwork.Title">
                             }
                             else
                             {

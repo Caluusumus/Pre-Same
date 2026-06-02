@@ -29,7 +29,7 @@
                         <div style="height: 300px; background-color: #eaeaea; overflow: hidden;" class="position-relative">
                             @if (!string.IsNullOrWhiteSpace(artwork.Image))
                             {
-                                <img src="@artwork.Image" class="w-100 h-100" style="object-fit: cover;" alt="@artwork.Title">
+                                <img src="@artwork.Image" class="w-100 h-100" style="object-fit: contain;" alt="@artwork.Title">
                             }
                             else
                             {
@@ -43,9 +43,12 @@
 
                             <div class="mt-auto pt-3 border-top d-flex gap-2">
                                 <a href="/artworks/details/@artwork.Id" class="btn btn-info flex-grow-1">Dettagli</a>
+                                <AuthorizeView Roles="Admin">                                    
                                 <a href="/artworks/edit/@artwork.Id" class="btn btn-warning"><i class="bi bi-pencil"></i> Modifica</a>
-                                <button class="btn btn-danger" @onclick="() => Delete(artwork.Id)"><i class="bi bi-trash"></i> X</button>
+                                <button class="btn btn-danger" @onclick="() => Delete(artwork.Id)"><i class="bi bi-trash"></i> X</button>                                   
+                                </AuthorizeView>
                             </div>
+                            
                         </div>
                     </div>
                 </div>
