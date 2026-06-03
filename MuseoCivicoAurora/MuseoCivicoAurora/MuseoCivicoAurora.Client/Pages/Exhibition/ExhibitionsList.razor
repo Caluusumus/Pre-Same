@@ -8,8 +8,9 @@
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
         <h1 class="display-4 fw-bold text-uppercase m-0">Mostre in Corso</h1>
+
         <AuthorizeView Roles="Admin">
-        <a href="/exhibitions/edit" class="btn btn-primary btn-lg">+ Nuova Mostra</a>
+            <a href="/exhibitions/edit" class="btn btn-primary btn-lg">+ Nuova Mostra</a>
         </AuthorizeView>
     </div>
 
@@ -31,7 +32,7 @@
                         <div class="col-md-4 p-0 position-relative" style="min-height: 250px; background-color: #eaeaea;">
                             @if (!string.IsNullOrWhiteSpace(exhibition.Image))
                             {
-                                <img src="@exhibition.Image" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;" alt="@exhibition.Title">
+                                <img src="@exhibition.Image" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain;" alt="@exhibition.Title">
                             }
                         </div>
 
@@ -48,17 +49,28 @@
                                 </p>
                             }
 
+                            <p class="text-muted mb-4">
+                                Stato: <strong>@TraduciStato(exhibition.Status)</strong>
+                            </p>
+
                             <div class="d-flex gap-2 mt-auto">
+
                                 <AuthorizeView Roles="Admin">
-                                <button class="btn btn-primary fw-bold px-4" @onclick="() => Details(exhibition.Id)">Gestisci Opere</button>
-                                <button class="btn btn-outline-dark fw-bold" @onclick ="() => Edit(exhibition.Id)">Modifica</button>
-                                <button class="btn btn-danger fw-bold" @onclick="() => Delete(exhibition.Id)">Elimina</button>
-                                </AuthorizeView>
-                                <AuthorizeView> 
+                                    <Authorized>
+                                        <button class="btn btn-primary fw-bold px-4" @onclick="() => Details(exhibition.Id)">Gestisci Opere</button>
+                                        <button class="btn btn-outline-dark fw-bold" @onclick="() => Edit(exhibition.Id)">Modifica</button>
+                                        <button class="btn btn-danger fw-bold" @onclick="() => Delete(exhibition.Id)">Elimina</button>
+                                    </Authorized>
                                     <NotAuthorized>
                                         <button class="btn btn-primary fw-bold px-4" @onclick="() => Details(exhibition.Id)">Dettagli</button>
                                     </NotAuthorized>
-                                     </AuthorizeView>
+                                </AuthorizeView>
+
+                                <AuthorizeView>
+                                    <Authorized>
+                                        <button class="btn btn-warning fw-bold px-4" @onclick="() => Prenota(exhibition.Id)">Prenota</button>
+                                    </Authorized>
+                                </AuthorizeView>
 
                             </div>
                         </div>
@@ -82,6 +94,17 @@
         exhibitions = await ApiClient.GetExhibitionsAsync();
     }
 
+    private string TraduciStato(string? status)
+    {
+        return status?.ToLower() switch
+        {
+            "scheduled" => "Programmata",
+            "active" => "Attiva",
+            "closed" => "Chiusa",
+            _ => "Stato Sconosciuto"
+        };
+    }
+
     private void CreateNew()
     {
         NavigationManager.NavigateTo("/exhibitions/edit");
@@ -97,9 +120,16 @@
         NavigationManager.NavigateTo($"/exhibitions/details/{id}");
     }
 
+    // NUOVO METODO: Gestisce il click sul tasto Prenota
+    private void Prenota(Guid id)
+    {
+        // Reindirizza l'utente alla pagina di creazione biglietti (o prenotazione)
+        // Puoi personalizzare questo URL in base a come è strutturata la tua rotta per i tickets/bookings
+        NavigationManager.NavigateTo("/tickets/edit");
+    }
+
     private async Task Delete(Guid id)
     {
-        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
         await ApiClient.DeleteExhibitionAsync(id);
         await LoadData();
     }
