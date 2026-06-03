@@ -19,7 +19,7 @@
 }
 else
 {
-    <EditForm Model="artwork" OnValidSubmit="SalvaOpera" FormName="formOpera">
+    <EditForm Model="artwork" OnValidSubmit="Save" FormName="formOpera">
         <DataAnnotationsValidator />
         <ValidationSummary />
 
@@ -64,11 +64,9 @@ else
 
     private Artwork artwork = new Artwork();
 
-    // Lista per popolare il menu a tendina delle mostre
     private List<Exhibition>? exhibitions;
     private string ErrorMessage = string.Empty;
 
-    // Proxy di conversione Blazor per DateOnly (poiché HTML InputDate usa DateTime)
     private DateTime? yearProxy
     {
         get => artwork.Year?.ToDateTime(TimeOnly.MinValue);
@@ -79,12 +77,10 @@ else
     {
         try
         {
-            // Scarichiamo la lista delle mostre per il menu a tendina
             exhibitions = await Http.GetFromJsonAsync<List<Exhibition>>("api/exhibitions");
 
             if (Id.HasValue)
             {
-                // Modalità Modifica: carichiamo i dati dell'opera esistente
                 var fetchedArtwork = await Http.GetFromJsonAsync<Artwork>($"api/artworks/{Id.Value}");
                 if (fetchedArtwork != null)
                 {
@@ -93,7 +89,6 @@ else
             }
             else
             {
-                // Modalità Nuovo: pre-impostiamo dati base se necessario
                 artwork.Year = DateOnly.FromDateTime(DateTime.Today);
             }
         }
@@ -103,11 +98,10 @@ else
         }
     }
 
-    private async Task SalvaOpera()
+    private async Task Save()
     {
         ErrorMessage = string.Empty;
 
-        // Esempio di validazione preventiva (opzionale)
         if (string.IsNullOrWhiteSpace(artwork.Title))
         {
             ErrorMessage = "Il titolo dell'opera è obbligatorio.";
@@ -124,7 +118,6 @@ else
             }
             else
             {
-                // Generiamo un nuovo ID per la creazione
                 artwork.Id = Guid.NewGuid();
                 response = await Http.PostAsJsonAsync("api/artworks", artwork);
             }
@@ -135,20 +128,16 @@ else
             }
             else
             {
-                // Se c'è un errore 400 Bad Request, leggiamo il JSON del server
                 var errorJson = await response.Content.ReadAsStringAsync();
                 try
                 {
                     using var doc = JsonDocument.Parse(errorJson);
-                    // Prova a leggere il campo "message" se le tue API lo inviano,
-                    // oppure mostra il JSON grezzo per fare debug
                     if (doc.RootElement.TryGetProperty("message", out var msgElement))
                     {
                         ErrorMessage = msgElement.GetString() ?? "Errore di validazione.";
                     }
                     else
                     {
-                        // Se l'API restituisce i validation errors standard di .NET
                         ErrorMessage = $"Errore di validazione dal server: {errorJson}";
                     }
                 }

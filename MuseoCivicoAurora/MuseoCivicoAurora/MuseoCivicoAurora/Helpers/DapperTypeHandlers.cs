@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using Dapper;
 
-namespace MuseoCivicoAurora.Helpers; // Cambia "cowork" con il namespace del tuo progetto Server se diverso
+namespace MuseoCivicoAurora.Helpers; 
 
 public class DateOnlyTypeHandler : SqlMapper.TypeHandler<DateOnly>
 {

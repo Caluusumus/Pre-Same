@@ -5,52 +5,67 @@
 @inject NavigationManager NavigationManager
 @rendermode InteractiveWebAssembly
 
-<h3>Lista Visite Guidate</h3>
-<AuthorizeView Roles="Admin">
-<a href="/tours/edit" class="btn btn-primary mb-3">Crea Nuova Visita</a>
-</AuthorizeView>
-@if (tours == null)
-{
-    <p><em>Caricamento in corso...</em></p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Titolo</th>
-                <th>Data e Ora</th>
-                <th>Durata</th>
-                <th>Guida</th>
-                <th>Max Partecipanti</th>
-                <th>Azioni</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var tour in tours)
-            {
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <h1 class="display-4 fw-bold text-uppercase m-0">Visite Guidate</h1>
+        <AuthorizeView Roles="Admin">
+            <a href="/tours/edit" class="btn btn-primary btn-lg">+ Crea Nuova Visita</a>
+        </AuthorizeView>
+    </div>
+
+    @if (tours == null)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-dark"></div></div>
+    }
+    else if (!tours.Any())
+    {
+        <p class="lead text-muted">Nessuna visita guidata programmata al momento.</p>
+    }
+    else
+    {
+        <table class="table table-hover align-middle shadow-sm">
+            <thead class="table-dark">
                 <tr>
-                    <td>@tour.Title</td>
-                    <td>@(tour.DateTime?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
-                    <td>@(tour.Duration?.ToString("HH:mm") ?? "-")</td>
-                    <td>@tour.Guide</td>
-                    <td>@tour.ParticipantsCount</td>
-                    <td>
-                        <AuthorizeView Roles="Admin">
-                        <button class="btn btn-sm btn-warning" @onclick="() => Edit(tour.Id)">Modifica</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(tour.Id)">Elimina</button>
-                        </AuthorizeView>
-                        <AuthorizeView>
-                            <button class="btn btn-sm btn-danger" @onclick="() => CreateNewBooking()">Prenota</button>
-                        </AuthorizeView>
-
-
-                    </td>
+                    <th>Titolo</th>
+                    <th>Data e Ora</th>
+                    <th>Durata</th>
+                    <th>Guida</th>
+                    <th>Posti Totali</th>
+                    <th class="text-end">Azioni</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-}
+            </thead>
+            <tbody>
+                @foreach (var tour in tours)
+                {
+                    <tr>
+                        <td class="fw-bold">@tour.Title</td>
+                        <td>@(tour.DateTime?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                        <td>@(tour.Duration?.ToString("HH:mm") ?? "-")</td>
+                        <td>@tour.Guide</td>
+                        <td>@tour.ParticipantsCount</td>
+                        <td class="text-end gap-2">
+                            <button  class="btn btn-sm btn-info fw-bold me-2" @onclick="() => Details(tour.Id)">Dettagli</button>
+
+                            <AuthorizeView>
+                                <Authorized>
+                                    <button class="btn btn-sm btn-success fw-bold" @onclick="() => Book(tour.Id)">Prenota</button>
+                                </Authorized>
+                                <NotAuthorized>
+                                    <span class="text-muted small fst-italic ms-2">Accedi per prenotare</span>
+                                </NotAuthorized>
+                            </AuthorizeView>
+
+                            <AuthorizeView Roles="Admin">
+                                <button class="btn btn-sm btn-outline-dark ms-2" @onclick="() => Edit(tour.Id)">Modifica</button>
+                                <button class="btn btn-sm btn-danger ms-1" @onclick="() => Delete(tour.Id)">Elimina</button>
+                            </AuthorizeView>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
 
 @code {
     private List<Tour>? tours;
@@ -65,24 +80,23 @@ else
         tours = await ApiClient.GetToursAsync();
     }
 
-    private void CreateNew()
+    private void Book(Guid tourId)
     {
-        NavigationManager.NavigateTo("/tours/edit");
+        NavigationManager.NavigateTo($"/bookings/edit?tourId={tourId}");
     }
 
-    private void CreateNewBooking()
-    {
-        NavigationManager.NavigateTo("/bookings/edit");
-    }
-
-    private void Edit(Guid id)
+    private void Edit(Guid id) 
     {
         NavigationManager.NavigateTo($"/tours/edit/{id}");
     }
 
+    private void Details(Guid id)
+    {
+        NavigationManager.NavigateTo($"/tours/details/{id}");
+    }
+
     private async Task Delete(Guid id)
     {
-        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
         await ApiClient.DeleteTourAsync(id);
         await LoadData();
     }

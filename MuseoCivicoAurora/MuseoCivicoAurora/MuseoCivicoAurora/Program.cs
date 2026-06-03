@@ -33,8 +33,6 @@ builder.Services.AddAuthentication(options =>
     .AddIdentityCookies();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-//builder.Services.AddDbContext<ApplicationDbContext>(options =>
-//    options.UseSqlServer(connectionString));
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
@@ -65,10 +63,6 @@ SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
-// Assicurati di avere questo in cima
-
-// Registra l'HttpClient in modo che il server possa chiamare le sue stesse API
 builder.Services.AddHttpClient<ExhibitionApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
 builder.Services.AddHttpClient<ArtworkApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
 builder.Services.AddHttpClient<BookingApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));

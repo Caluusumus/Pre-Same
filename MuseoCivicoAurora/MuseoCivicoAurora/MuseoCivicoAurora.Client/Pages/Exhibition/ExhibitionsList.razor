@@ -50,7 +50,7 @@
                             }
 
                             <p class="text-muted mb-4">
-                                Stato: <strong>@TraduciStato(exhibition.Status)</strong>
+                                Stato: <strong>@Translate(exhibition.Status)</strong>
                             </p>
 
                             <div class="d-flex gap-2 mt-auto">
@@ -68,7 +68,7 @@
 
                                 <AuthorizeView>
                                     <Authorized>
-                                        <button class="btn btn-warning fw-bold px-4" @onclick="() => Prenota(exhibition.Id)">Prenota</button>
+                                        <button class="btn btn-warning fw-bold px-4" @onclick="() => Book(exhibition.Id)">Prenota</button>
                                     </Authorized>
                                 </AuthorizeView>
 
@@ -94,7 +94,7 @@
         exhibitions = await ApiClient.GetExhibitionsAsync();
     }
 
-    private string TraduciStato(string? status)
+    private string Translate(string? status)
     {
         return status?.ToLower() switch
         {
@@ -120,11 +120,8 @@
         NavigationManager.NavigateTo($"/exhibitions/details/{id}");
     }
 
-    // NUOVO METODO: Gestisce il click sul tasto Prenota
-    private void Prenota(Guid id)
+    private void Book(Guid id)
     {
-        // Reindirizza l'utente alla pagina di creazione biglietti (o prenotazione)
-        // Puoi personalizzare questo URL in base a come è strutturata la tua rotta per i tickets/bookings
         NavigationManager.NavigateTo("/tickets/edit");
     }
 

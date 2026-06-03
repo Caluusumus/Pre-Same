@@ -1,103 +1,123 @@
 ﻿@page "/tickets/edit"
 @page "/tickets/edit/{Id:guid}"
+@attribute [Authorize]
 @rendermode InteractiveWebAssembly
 @using ClassModels
 @using System.Text.Json
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
-<h3>@(Id == null ? "Nuovo Biglietto" : "Modifica Biglietto")</h3>
+<div class="container my-5">
+    <h1 class="mb-4">@(Id == null ? "Acquista Nuovo Biglietto" : "Modifica Biglietto")</h1>
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div class="alert alert-danger">@ErrorMessage</div>
-}
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger shadow-sm fw-bold">@ErrorMessage</div>
+    }
 
-@if (exhibitions == null || tours == null)
-{
-    <p><em>Caricamento dei dati in corso...</em></p>
-}
-else
-{
-    <EditForm Model="ticket" OnValidSubmit="SalvaBiglietto" FormName="formTicket">
-        <DataAnnotationsValidator />
-        <ValidationSummary style="color: red; font-weight: bold; margin-bottom: 15px;" />
+    @if (exhibitions == null || tours == null)
+    {
+        <p><em>Inizializzazione in corso...</em></p>
+    }
+    else
+    {
+        <EditForm Model="ticket" OnValidSubmit="Save" FormName="formTicket" class="card shadow-sm p-4 border-0">
+            <DataAnnotationsValidator />
+            <ValidationSummary style="color: red; font-weight: bold; margin-bottom: 15px;" />
 
-        <div class="mb-3">
-            <label class="form-label">Nome Acquirente:</label>
-            <InputText class="form-control" @bind-Value="ticket.FirstName" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Cognome Acquirente:</label>
-            <InputText class="form-control" @bind-Value="ticket.LastName" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Email (*):</label>
-            <InputText class="form-control" @bind-Value="ticket.Email" />
-        </div>
-
-        <div class="row">
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Tipologia:</label>
-                <InputSelect class="form-control" @bind-Value="ticket.Type">
-                    <option value="full">Intero</option>
-                    <option value="reduced">Ridotto</option>
-                    <option value="free">Gratuito</option>
-                </InputSelect>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nome Acquirente:</label>
+                    <InputText class="form-control" @bind-Value="ticket.FirstName" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Cognome Acquirente:</label>
+                    <InputText class="form-control" @bind-Value="ticket.LastName" />
+                </div>
             </div>
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Quantità:</label>
-                <InputNumber class="form-control" @bind-Value="ticket.Quantity" />
-            </div>
-            <div class="col-md-4 mb-3">
-                <label class="form-label">Totale (€):</label>
-                <InputNumber class="form-control" @bind-Value="ticket.Total" />
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Mostra di riferimento (Opzionale):</label>
-                <InputSelect TValue="Guid?" class="form-control" @bind-Value="ticket.ExhibitionId">
-                    <option value="">-- Nessuna mostra --</option>
-                    @foreach (var exh in exhibitions)
-                    {
-                        <option value="@exh.Id">@exh.Title</option>
-                    }
-                </InputSelect>
+            <div class="mb-3">
+                <label class="form-label">Email Intestatario (*):</label>
+                <InputText class="form-control" @bind-Value="ticket.Email" disabled="@(!isAdmin)" />
+                @if (!isAdmin)
+                {
+                    <small class="text-muted">Associata al tuo profilo in modo sicuro.</small>
+                }
             </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Visita di riferimento (Opzionale):</label>
-                <InputSelect TValue="Guid?" class="form-control" @bind-Value="ticket.TourId">
-                    <option value="">-- Nessuna visita --</option>
-                    @foreach (var tour in tours)
-                    {
-                        <option value="@tour.Id">@tour.Title</option>
-                    }
-                </InputSelect>
-            </div>
-        </div>
 
-        <button type="submit" class="btn btn-success">Salva</button>
-        <a href="/tickets" class="btn btn-secondary">Annulla</a>
-    </EditForm>
-}
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <label class="form-label">Tipologia:</label>
+                    <InputSelect class="form-control" @bind-Value="ticket.Type">
+                        <option value="full">Intero</option>
+                        <option value="reduced">Ridotto</option>
+                        <option value="free">Gratuito</option>
+                    </InputSelect>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <label class="form-label">Quantità:</label>
+                    <InputNumber class="form-control" @bind-Value="ticket.Quantity" min="1" />
+                </div>
+                <div class="col-md-4 mb-4">
+                    <label class="form-label">Totale Stimato (€):</label>
+                    <InputNumber class="form-control" @bind-Value="ticket.Total" />
+                </div>
+            </div>
+
+            <div class="row bg-light p-3 mb-4 rounded">
+                <h5 class="mb-3">Associa Biglietto (Opzionale)</h5>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Valido per la Mostra:</label>
+                    <InputSelect TValue="Guid?" class="form-control" @bind-Value="ticket.ExhibitionId">
+                        <option value="">-- Ingresso Generale / Nessuna mostra --</option>
+                        @foreach (var exh in exhibitions.Where(e => e.EndDate >= DateTime.Now)) 
+                        {
+                            <option value="@exh.Id">@exh.Title</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Valido per la Visita:</label>
+                    <InputSelect TValue="Guid?" class="form-control" @bind-Value="ticket.TourId">
+                        <option value="">-- Nessuna visita --</option>
+                        @foreach (var tour in tours.Where(t => t.DateTime >= DateTime.Now))
+                        {
+                            <option value="@tour.Id">@tour.Title</option>
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" class="btn btn-warning fw-bold px-4">Procedi</button>
+                <a href="/tickets" class="btn btn-secondary ms-2">Annulla</a>
+            </div>
+        </EditForm>
+    }
+</div>
 
 @code {
-    [Parameter]
-    public Guid? Id { get; set; }
+    [Parameter] public Guid? Id { get; set; }
 
     private Ticket ticket = new Ticket { Type = "full", Quantity = 1 };
     private List<Exhibition>? exhibitions;
     private List<Tour>? tours;
     private string ErrorMessage = string.Empty;
+    private bool isAdmin = false;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            isAdmin = authState.User.IsInRole("Admin");
+
+            if (!Id.HasValue)
+                ticket.Email = authState.User.Identity?.Name ?? "";
+
             exhibitions = await Http.GetFromJsonAsync<List<Exhibition>>("api/exhibitions");
             tours = await Http.GetFromJsonAsync<List<Tour>>("api/tours");
 
@@ -107,25 +127,20 @@ else
                 if (fetched != null) ticket = fetched;
             }
         }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Errore di caricamento: {ex.Message}";
-        }
+        catch (Exception ex) { ErrorMessage = $"Errore: {ex.Message}"; }
     }
 
-    private async Task SalvaBiglietto()
+    private async Task Save()
     {
         ErrorMessage = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(ticket.Email))
-        {
-            ErrorMessage = "L'email è obbligatoria.";
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(ticket.Email)) { ErrorMessage = "L'email è obbligatoria."; return; }
+        if (ticket.Quantity <= 0) { ErrorMessage = "La quantità deve essere maggiore di zero."; return; }
 
-        HttpResponseMessage response;
         try
         {
+            HttpResponseMessage response;
+
             if (Id.HasValue)
             {
                 response = await Http.PutAsJsonAsync($"api/tickets/{Id.Value}", ticket);
@@ -137,22 +152,8 @@ else
                 response = await Http.PostAsJsonAsync("api/tickets", ticket);
             }
 
-            if (response.IsSuccessStatusCode)
-            {
-                Navigation.NavigateTo("/tickets");
-            }
-            else
-            {
-                var errorJson = await response.Content.ReadAsStringAsync();
-                try
-                {
-                    using var doc = JsonDocument.Parse(errorJson);
-                    ErrorMessage = doc.RootElement.TryGetProperty("message", out var msg)
-                        ? msg.GetString() ?? "Errore di validazione."
-                        : $"Errore Server 400: {errorJson}";
-                }
-                catch { ErrorMessage = "Errore 400: Il server ha rifiutato i dati inviati."; }
-            }
+            if (response.IsSuccessStatusCode) Navigation.NavigateTo("/tickets");
+            else ErrorMessage = "Errore durante il salvataggio. Riprova.";
         }
         catch (Exception ex) { ErrorMessage = $"Errore di rete: {ex.Message}"; }
     }

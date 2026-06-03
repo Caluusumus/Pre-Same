@@ -1,51 +1,76 @@
 ﻿@page "/bookings"
+@attribute [Authorize]
 @using ClassModels
 @using MuseoCivicoAurora.Client.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
 @inject BookingApiClient ApiClient
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
 @rendermode InteractiveWebAssembly
 
-<h3>Lista Prenotazioni</h3>
-<AuthorizeView Roles="Admin">
-<a href="/bookings/edit" class="btn btn-primary mb-3">Nuova Prenotazione</a>
-</AuthorizeView>
-@if (bookings == null)
-{
-    <p><em>Caricamento in corso...</em></p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>Cognome</th>
-                <th>Email</th>
-                <th>Partecipanti</th>
-                <th>Stato</th>
-                <th>Azioni</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var booking in bookings)
-            {
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <h1 class="display-4 fw-bold text-uppercase m-0">Prenotazioni</h1>
+        <a href="/tours" class="btn btn-warning btn-lg fw-bold">Prenota Nuova Visita</a>
+    </div>
+
+    @if (bookings == null)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-dark"></div></div>
+    }
+    else if (!bookings.Any())
+    {
+        <p class="lead text-muted">Non hai ancora effettuato nessuna prenotazione.</p>
+    }
+    else
+    {
+        <table class="table table-hover shadow-sm align-middle">
+            <thead class="table-dark">
                 <tr>
-                    <td>@booking.FirstName</td>
-                    <td>@booking.LastName</td>
-                    <td>@booking.Email</td>
-                    <td>@booking.ParticipantsCount</td>
-                    <td>@booking.Status</td>
-                    <td>
+                    <th>Intestatario</th>
+                    <th>Partecipanti</th>
+                    <th>Stato</th>
+                    <th>Riferimento Visita</th>
                     <AuthorizeView Roles="Admin">
-                        <button class="btn btn-sm btn-warning" @onclick="() => Edit(booking.Id)">Modifica</button>
-                            <button class="btn btn-sm btn-danger" @onclick="() => Delete(booking.Id)">Elimina</button>
-                        </AuthorizeView>
-                    </td>
+                        <th class="text-end">Azioni Admin</th>
+                    </AuthorizeView>
                 </tr>
-            }
-        </tbody>
-    </table>
-}
+            </thead>
+            <tbody>
+                @foreach (var booking in bookings)
+                {
+                    <tr>
+                        <td class="fw-bold">
+                            @booking.FirstName @booking.LastName<br />
+                            <small class="text-muted fw-normal">@booking.Email</small>
+                        </td>
+                        <td>@booking.ParticipantsCount</td>
+                        <td>
+                            <span class="badge @(booking.Status == "confirmed" ? "bg-success" : "bg-danger")">
+                                @(booking.Status == "confirmed" ? "Confermata" : "Annullata")
+                            </span>
+                        </td>
+
+                        <td>
+                            @if (booking.TourId != Guid.Empty)
+                            {
+                                <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => Details(booking.TourId)">Vedi Visita</button>
+                            }
+                        </td>
+
+                        <AuthorizeView Roles="Admin">
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-dark" @onclick="() => Edit(booking.Id)">Modifica</button>
+                                <button class="btn btn-sm btn-danger ms-1" @onclick="() => Delete(booking.Id)">Elimina</button>
+                            </td>
+                        </AuthorizeView>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
 
 @code {
     private List<Booking>? bookings;
@@ -57,22 +82,35 @@ else
 
     private async Task LoadData()
     {
-        bookings = await ApiClient.GetBookingsAsync();
-    }
+        var allBookings = await ApiClient.GetBookingsAsync();
 
-    private void CreateNew()
-    {
-        NavigationManager.NavigateTo("/bookings/edit");
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var isAdmin = user.IsInRole("Admin");
+
+        if (isAdmin)
+        {
+            bookings = allBookings?.ToList();
+        }
+        else
+        {
+            var userEmail = user.Identity?.Name;
+            bookings = allBookings?.Where(b => b.Email == userEmail).ToList();
+        }
     }
 
     private void Edit(Guid id)
     {
         NavigationManager.NavigateTo($"/bookings/edit/{id}");
     }
+    
+    private void Details(Guid TourId)
+    {
+        NavigationManager.NavigateTo($"/tours/details/{TourId}");
+    }
 
     private async Task Delete(Guid id)
     {
-        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
         await ApiClient.DeleteBookingAsync(id);
         await LoadData();
     }

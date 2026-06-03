@@ -1,49 +1,78 @@
 ﻿@page "/tickets"
+@attribute [Authorize]
 @using ClassModels
 @using MuseoCivicoAurora.Client.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @inject TicketApiClient ApiClient
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
 @rendermode InteractiveWebAssembly
 
-<h3>Lista Biglietti</h3>
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <h1 class="display-4 fw-bold text-uppercase m-0">I Tuoi Biglietti</h1>
+        <a href="/tickets/edit" class="btn btn-warning btn-lg fw-bold">Acquista Biglietto</a>
+    </div>
 
-<a href="/tickets/edit" class="btn btn-primary mb-3">Emetti Nuovo Biglietto</a>
-
-@if (tickets == null)
-{
-    <p><em>Caricamento in corso...</em></p>
-}
-else
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Nome Acquirente</th>
-                <th>Email</th>
-                <th>Tipologia</th>
-                <th>Quantità</th>
-                <th>Totale (€)</th>
-                <th>Azioni</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var ticket in tickets)
-            {
+    @if (tickets == null)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-dark"></div></div>
+    }
+    else if (!tickets.Any())
+    {
+        <p class="lead text-muted">Nessun biglietto registrato con questa email.</p>
+    }
+    else
+    {
+        <table class="table table-hover shadow-sm align-middle">
+            <thead class="table-dark">
                 <tr>
-                    <td>@ticket.FirstName</td>
-                    <td>@ticket.Email</td>
-                    <td>@ticket.Type</td>
-                    <td>@ticket.Quantity</td>
-                    <td>@ticket.Total</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning" @onclick="() => Edit(ticket.Id)">Modifica</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(ticket.Id)">Elimina</button>
-                    </td>
+                    <th>Intestatario</th>
+                    <th>Tipologia</th>
+                    <th>Q.tà</th>
+                    <th>Totale</th>
+                    <th>Riferimenti</th>
+                    <AuthorizeView Roles="Admin">
+                        <th class="text-end">Azioni Admin</th>
+                    </AuthorizeView>
                 </tr>
-            }
-        </tbody>
-    </table>
-}
+            </thead>
+            <tbody>
+                @foreach (var ticket in tickets)
+                {
+                    <tr>
+                        <td class="fw-bold">
+                            @ticket.FirstName @ticket.LastName<br />
+                            <small class="text-muted fw-normal">@ticket.Email</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary text-uppercase">@ticket.Type</span>
+                        </td>
+                        <td>@ticket.Quantity</td>
+                        <td class="fw-bold">€ @ticket.Total</td>
+
+                        <td>
+                            <div class="d-flex flex-column gap-1 align-items-start">                                
+                                    <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => ExhibitionDetails(ticket.ExhibitionId)">Vedi Mostra</button>
+                                <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => TourDetails(ticket.TourId)">Vedi Visita</button>
+                                    <span class="text-muted small fst-italic">Ingresso Generale</span>
+                                
+                            </div>
+                        </td>
+
+                        <AuthorizeView Roles="Admin">
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-dark" @onclick="() => Edit(ticket.Id)">Modifica</button>
+                                <button class="btn btn-sm btn-danger ms-1" @onclick="() => Delete(ticket.Id)">Elimina</button>
+                            </td>
+                        </AuthorizeView>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
 
 @code {
     private List<Ticket>? tickets;
@@ -55,22 +84,40 @@ else
 
     private async Task LoadData()
     {
-        tickets = await ApiClient.GetTicketsAsync();
+        var allTickets = await ApiClient.GetTicketsAsync();
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var isAdmin = user.IsInRole("Admin");
+
+        if (isAdmin)
+        {
+            tickets = allTickets?.ToList();
+        }
+        else
+        {
+            var userEmail = user.Identity?.Name;
+            tickets = allTickets?.Where(t => t.Email == userEmail).ToList();
+        }
     }
 
-    private void CreateNew()
-    {
-        NavigationManager.NavigateTo("/tickets/edit");
-    }
-
-    private void Edit(Guid id)
+    private void Edit(Guid id)  
     {
         NavigationManager.NavigateTo($"/tickets/edit/{id}");
     }
 
+    private void ExhibitionDetails(Guid? ExhibitionId)
+    {
+        NavigationManager.NavigateTo($"/exhibitions/details/{ExhibitionId}");
+    }
+
+    private void TourDetails(Guid? TourId)
+    {
+        NavigationManager.NavigateTo($"/tours/details/{TourId}");
+    }
+
     private async Task Delete(Guid id)
     {
-        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
         await ApiClient.DeleteTicketAsync(id);
         await LoadData();
     }

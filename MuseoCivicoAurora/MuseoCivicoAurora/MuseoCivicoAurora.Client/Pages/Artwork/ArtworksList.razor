@@ -44,9 +44,9 @@
                             <p class="fst-italic text-muted mb-3">di @(string.IsNullOrWhiteSpace(artwork.Artist) ? "Autore Ignoto" : artwork.Artist)</p>
 
                             <div class="mt-auto pt-3 border-top d-flex gap-2">
-                                <a href="/artworks/details/@artwork.Id" class="btn btn-info flex-grow-1">Dettagli</a>
+                                <button class="btn btn-info flex-grow-1" @onclick="() => Details(artwork.Id)">Dettagli</button>
                                 <AuthorizeView Roles="Admin">                                    
-                                <a href="/artworks/edit/@artwork.Id" class="btn btn-warning"><i class="bi bi-pencil"></i> Modifica</a>
+                                <button class="btn btn-warning" @onclick="() => Edit(artwork.Id)"><i class="bi bi-pencil"></i> Modifica</button>
                                 <button class="btn btn-danger" @onclick="() => Delete(artwork.Id)"><i class="bi bi-trash"></i> X</button>                                   
                                 </AuthorizeView>
                             </div>
@@ -72,9 +72,15 @@
         artworks = await ApiClient.GetArtworksAsync();
     }
 
+
     private void CreateNew()
     {
         NavigationManager.NavigateTo("/artworks/edit");
+    }
+
+    private void Details(Guid id)
+    {
+        NavigationManager.NavigateTo($"/artworks/details/{id}");
     }
 
     private void Edit(Guid id)
@@ -84,7 +90,6 @@
 
     private async Task Delete(Guid id)
     {
-        // Sarebbe ideale aggiungere un JS Confirm qui prima di eliminare
         await ApiClient.DeleteArtworkAsync(id);
         await LoadData();
     }

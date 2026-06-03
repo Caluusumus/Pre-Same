@@ -73,7 +73,6 @@ else
     {
         try
         {
-            // Scarichiamo l'opera dal server tramite l'Id
             artwork = await Http.GetFromJsonAsync<Artwork>($"api/artworks/{Id}");
         }
         catch (Exception ex)

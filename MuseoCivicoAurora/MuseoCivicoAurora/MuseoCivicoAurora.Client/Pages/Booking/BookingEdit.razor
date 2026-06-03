@@ -1,85 +1,109 @@
 ﻿@page "/bookings/edit"
 @page "/bookings/edit/{Id:guid}"
+@attribute [Authorize]
 @rendermode InteractiveWebAssembly
 @using ClassModels
 @using System.Text.Json
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 
-<h3>@(Id == null ? "Nuova Prenotazione" : "Modifica Prenotazione")</h3>
+<div class="container my-5">
+    <h1 class="mb-4">@(Id == null ? "Prenota una Visita Guidata" : "Modifica Prenotazione")</h1>
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div class="alert alert-danger">@ErrorMessage</div>
-}
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger shadow-sm fw-bold">@ErrorMessage</div>
+    }
 
-@if (tours == null)
-{
-    <p><em>Caricamento dei dati in corso...</em></p>
-}
-else
-{
-    <EditForm Model="booking" OnValidSubmit="SalvaPrenotazione" FormName="formPrenotazione">
-        <DataAnnotationsValidator />
-        <ValidationSummary style="color: red; font-weight: bold; margin-bottom: 15px;" />
+    @if (tours == null)
+    {
+        <p><em>Caricamento visite disponibili...</em></p>
+    }
+    else
+    {
+        <EditForm Model="booking" OnValidSubmit="Save" FormName="formPrenotazione" class="card shadow-sm p-4 border-0">
+            <DataAnnotationsValidator />
+            <ValidationSummary style="color: red; font-weight: bold; margin-bottom: 15px;" />
 
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Nome:</label>
-                <InputText class="form-control" @bind-Value="booking.FirstName" />
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nome:</label>
+                    <InputText class="form-control" @bind-Value="booking.FirstName" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Cognome:</label>
+                    <InputText class="form-control" @bind-Value="booking.LastName" />
+                </div>
             </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Cognome:</label>
-                <InputText class="form-control" @bind-Value="booking.LastName" />
-            </div>
-        </div>
 
-        <div class="mb-3">
-            <label class="form-label">Email (*):</label>
-            <InputText class="form-control" @bind-Value="booking.Email" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Numero Partecipanti:</label>
-            <InputNumber class="form-control" @bind-Value="booking.ParticipantsCount" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Visita Guidata Associata (*):</label>
-            <InputSelect TValue="Guid" class="form-control" @bind-Value="booking.TourId">
-                <option value="@Guid.Empty">-- Seleziona una visita --</option>
-                @foreach (var tour in tours)
+            <div class="mb-3">
+                <label class="form-label">Email di riferimento (*):</label>
+                <InputText class="form-control" @bind-Value="booking.Email" disabled="@(!isAdmin)" />
+                @if (!isAdmin)
                 {
-                    <option value="@tour.Id">@tour.Title (@tour.DateTime?.ToString("dd/MM/yyyy HH:mm"))</option>
+                    <small class="text-muted">L'email è fissa ed è associata al tuo account.</small>
                 }
-            </InputSelect>
-        </div>
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label">Stato:</label>
-            <InputSelect class="form-control" @bind-Value="booking.Status">
-                <option value="confirmed">Confermata</option>
-                <option value="cancelled">Annullata</option>
-            </InputSelect>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Seleziona la Visita Guidata (*):</label>
+                <InputSelect TValue="Guid" class="form-control" @bind-Value="booking.TourId">
+                    <option value="@Guid.Empty">-- Scegli la visita --</option>
+                    @foreach (var tour in tours.Where(t => t.DateTime >= DateTime.Now))
+                    {
+                        <option value="@tour.Id">@tour.Title (@tour.DateTime?.ToString("dd/MM/yyyy HH:mm")) - Max @tour.ParticipantsCount persone</option>
+                    }
+                </InputSelect>
+            </div>
 
-        <button type="submit" class="btn btn-success">Salva</button>
-        <a href="/bookings" class="btn btn-secondary">Annulla</a>
-    </EditForm>
-}
+            <div class="mb-4">
+                <label class="form-label">Numero di Partecipanti:</label>
+                <InputNumber class="form-control" @bind-Value="booking.ParticipantsCount" min="1" />
+            </div>
+
+            <AuthorizeView Roles="Admin" Context="authContext">
+                <div class="mb-4 border-start border-warning ps-3">
+                    <label class="form-label text-warning fw-bold">Stato (Solo Admin):</label>
+                    <InputSelect class="form-control" @bind-Value="booking.Status">
+                        <option value="confirmed">Confermata</option>
+                        <option value="cancelled">Annullata</option>
+                    </InputSelect>
+                </div>
+            </AuthorizeView>
+
+            <div>
+                <button type="submit" class="btn btn-success fw-bold px-4">Conferma Prenotazione</button>
+                <a href="/bookings" class="btn btn-secondary ms-2">Annulla</a>
+            </div>
+        </EditForm>
+    }
+</div>
 
 @code {
-    [Parameter]
-    public Guid? Id { get; set; }
+    [Parameter] public Guid? Id { get; set; }
+    [SupplyParameterFromQuery] public Guid? tourId { get; set; } 
 
     private Booking booking = new Booking { Status = "confirmed", ParticipantsCount = 1 };
     private List<Tour>? tours;
     private string ErrorMessage = string.Empty;
+    private bool isAdmin = false;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            isAdmin = authState.User.IsInRole("Admin");
+
+            if (!Id.HasValue)
+                booking.Email = authState.User.Identity?.Name ?? "";
+
+            if (tourId.HasValue && tourId != Guid.Empty)
+                booking.TourId = tourId.Value;
+
             tours = await Http.GetFromJsonAsync<List<Tour>>("api/tours");
 
             if (Id.HasValue)
@@ -88,30 +112,34 @@ else
                 if (fetched != null) booking = fetched;
             }
         }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Errore di caricamento: {ex.Message}";
-        }
+        catch (Exception ex) { ErrorMessage = $"Errore: {ex.Message}"; }
     }
 
-    private async Task SalvaPrenotazione()
+    private async Task Save()
     {
         ErrorMessage = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(booking.Email))
+        if (string.IsNullOrWhiteSpace(booking.Email)) { ErrorMessage = "L'email è obbligatoria."; return; }
+        if (booking.TourId == Guid.Empty) { ErrorMessage = "Selezionare una Visita Guidata."; return; }
+        if (booking.ParticipantsCount <= 0) { ErrorMessage = "Seleziona almeno un partecipante."; return; }
+
+        var selectedTour = tours?.FirstOrDefault(t => t.Id == booking.TourId);
+        if (selectedTour != null)
         {
-            ErrorMessage = "L'email è obbligatoria.";
-            return;
-        }
-        if (booking.TourId == Guid.Empty)
-        {
-            ErrorMessage = "Selezionare una Visita Guidata.";
-            return;
+            if (selectedTour.DateTime < DateTime.Now)
+            {
+                ErrorMessage = "ERRORE: Non è possibile prenotare una visita passata."; return;
+            }
+            if (booking.ParticipantsCount > selectedTour.ParticipantsCount)
+            {
+                ErrorMessage = $"ERRORE: Massimo consentito {selectedTour.ParticipantsCount} partecipanti."; return;
+            }
         }
 
-        HttpResponseMessage response;
         try
         {
+            HttpResponseMessage response;
+
             if (Id.HasValue)
             {
                 response = await Http.PutAsJsonAsync($"api/bookings/{Id.Value}", booking);
@@ -123,22 +151,8 @@ else
                 response = await Http.PostAsJsonAsync("api/bookings", booking);
             }
 
-            if (response.IsSuccessStatusCode)
-            {
-                Navigation.NavigateTo("/bookings");
-            }
-            else
-            {
-                var errorJson = await response.Content.ReadAsStringAsync();
-                try
-                {
-                    using var doc = JsonDocument.Parse(errorJson);
-                    ErrorMessage = doc.RootElement.TryGetProperty("message", out var msg)
-                        ? msg.GetString() ?? "Errore di validazione."
-                        : $"Errore Server 400: {errorJson}";
-                }
-                catch { ErrorMessage = "Errore 400: Il server ha rifiutato il formato dei dati."; }
-            }
+            if (response.IsSuccessStatusCode) Navigation.NavigateTo("/bookings");
+            else ErrorMessage = "Errore durante il salvataggio. Controlla i dati.";
         }
         catch (Exception ex) { ErrorMessage = $"Errore di rete: {ex.Message}"; }
     }

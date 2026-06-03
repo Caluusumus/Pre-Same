@@ -7,9 +7,6 @@ public static class ExhibitionsEndpoints
 {
     public static void MapExhibitionsEndpoints(this IEndpointRouteBuilder app)
     {
-        // ==========================================
-        // 1. ENDPOINT PER LE MOSTRE (EXHIBITIONS)
-        // ==========================================
         var group = app.MapGroup("/api/exhibitions").WithTags("Exhibitions").DisableAntiforgery();
 
         group.MapGet("/", async (IExhibitionsService service) =>
@@ -30,8 +27,6 @@ public static class ExhibitionsEndpoints
         {
             try
             {
-                // Nei tuoi servizi originali AddExhibitionAsync non ritorna un valore, 
-                // quindi aspettiamo che finisca e poi ritorniamo l'oggetto ricevuto.
                 await service.AddExhibitionAsync(exhibition);
                 return Results.Created($"/api/exhibitions/{exhibition.Id}", exhibition);
             }
@@ -45,14 +40,12 @@ public static class ExhibitionsEndpoints
         {
             try
             {
-                // Prima controlliamo se la mostra esiste davvero
                 var existing = await service.GetExhibitionByIdAsync(id);
                 if (existing is null)
                 {
                     return Results.NotFound(new { message = $"Mostra con id {id} non trovata." });
                 }
 
-                // Assicuriamoci che l'ID dell'oggetto corrisponda a quello dell'URL
                 exhibition.Id = id;
 
                 await service.UpdateExhibitionAsync(exhibition);

@@ -1,85 +1,89 @@
 ﻿@page "/tours/edit"
 @page "/tours/edit/{Id:guid}"
+@attribute [Authorize(Roles = "Admin")]
 @rendermode InteractiveWebAssembly
 @using ClassModels
 @using System.Text.Json
+@using Microsoft.AspNetCore.Authorization
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
-<h3>@(Id == null ? "Nuova Visita" : "Modifica Visita")</h3>
+<div class="container my-5">
+    <h1 class="mb-4">@(Id == null ? "Nuova Visita Guidata" : "Modifica Visita")</h1>
 
-@if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div class="alert alert-danger">@ErrorMessage</div>
-}
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger fw-bold shadow-sm">@ErrorMessage</div>
+    }
 
-@if (exhibitions == null)
-{
-    <p><em>Caricamento dei dati in corso...</em></p>
-}
-else
-{
-    <EditForm Model="tour" OnValidSubmit="SalvaVisita" FormName="formTour">
-        <DataAnnotationsValidator />
-        <ValidationSummary style="color: red; font-weight: bold; margin-bottom: 15px;" />
+    @if (exhibitions == null)
+    {
+        <p><em>Caricamento dei dati in corso...</em></p>
+    }
+    else
+    {
+        <EditForm Model="tour" OnValidSubmit="Save" FormName="formTour" class="card shadow-sm p-4 border-0">
+            <DataAnnotationsValidator />
+            <ValidationSummary style="color: red; font-weight: bold; margin-bottom: 15px;" />
 
-        <div class="mb-3">
-            <label class="form-label">Titolo (*):</label>
-            <InputText class="form-control" @bind-Value="tour.Title" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Descrizione:</label>
-            <InputTextArea class="form-control" @bind-Value="tour.Description" />
-        </div>
-
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Data e Ora:</label>
-                <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="tour.DateTime" />
+            <div class="mb-3">
+                <label class="form-label">Titolo (*):</label>
+                <InputText class="form-control" @bind-Value="tour.Title" />
             </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Durata (es. 01:30):</label>
-                <InputText class="form-control" @bind-Value="durationProxy" />
-            </div>
-        </div>
 
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Nome Guida:</label>
-                <InputText class="form-control" @bind-Value="tour.Guide" />
+            <div class="mb-3">
+                <label class="form-label">Descrizione:</label>
+                <InputTextArea class="form-control" @bind-Value="tour.Description" />
             </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Numero Max Partecipanti:</label>
-                <InputNumber class="form-control" @bind-Value="tour.ParticipantsCount" />
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Data e Ora (*):</label>
+                    <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="tour.DateTime" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Durata (es. 01:30):</label>
+                    <InputText class="form-control" @bind-Value="durationProxy" />
+                </div>
             </div>
-        </div>
 
-        <div class="mb-3">
-            <label class="form-label">Mostra Associata (Opzionale):</label>
-            <InputSelect TValue="Guid?" class="form-control" @bind-Value="tour.ExhibitionId">
-                <option value="">-- Nessuna mostra --</option>
-                @foreach (var exh in exhibitions)
-                {
-                    <option value="@exh.Id">@exh.Title</option>
-                }
-            </InputSelect>
-        </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nome Guida:</label>
+                    <InputText class="form-control" @bind-Value="tour.Guide" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Numero Max Partecipanti (*):</label>
+                    <InputNumber class="form-control" @bind-Value="tour.ParticipantsCount" />
+                </div>
+            </div>
 
-        <button type="submit" class="btn btn-success">Salva</button>
-        <a href="/tours" class="btn btn-secondary">Annulla</a>
-    </EditForm>
-}
+            <div class="mb-4">
+                <label class="form-label">Mostra Associata (Opzionale):</label>
+                <InputSelect TValue="Guid?" class="form-control" @bind-Value="tour.ExhibitionId">
+                    <option value="">-- Nessuna mostra --</option>
+                    @foreach (var exh in exhibitions)
+                    {
+                        <option value="@exh.Id">@exh.Title</option>
+                    }
+                </InputSelect>
+            </div>
+
+            <div>
+                <button type="submit" class="btn btn-success fw-bold px-4">Salva Visita</button>
+                <a href="/tours" class="btn btn-secondary ms-2">Annulla</a>
+            </div>
+        </EditForm>
+    }
+</div>
 
 @code {
-    [Parameter]
-    public Guid? Id { get; set; }
+    [Parameter] public Guid? Id { get; set; }
 
-    private Tour tour = new Tour { DateTime = DateTime.Now };
+    private Tour tour = new Tour { DateTime = DateTime.Now.AddDays(1) };
     private List<Exhibition>? exhibitions;
     private string ErrorMessage = string.Empty;
 
-    // Proxy stringa <-> TimeOnly
     private string durationProxy
     {
         get => tour.Duration?.ToString("HH:mm") ?? "";
@@ -91,32 +95,27 @@ else
         try
         {
             exhibitions = await Http.GetFromJsonAsync<List<Exhibition>>("api/exhibitions");
-
             if (Id.HasValue)
             {
                 var fetched = await Http.GetFromJsonAsync<Tour>($"api/tours/{Id.Value}");
                 if (fetched != null) tour = fetched;
             }
         }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Errore di caricamento: {ex.Message}";
-        }
+        catch (Exception ex) { ErrorMessage = $"Errore: {ex.Message}"; }
     }
 
-    private async Task SalvaVisita()
+    private async Task Save()
     {
         ErrorMessage = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(tour.Title))
-        {
-            ErrorMessage = "Il titolo della visita è obbligatorio.";
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(tour.Title)) { ErrorMessage = "Il titolo è obbligatorio."; return; }
+        if (tour.ParticipantsCount <= 0) { ErrorMessage = "Il numero partecipanti deve essere > 0."; return; }
+        if (tour.DateTime < DateTime.Now) { ErrorMessage = "ERRORE: Data nel passato."; return; }
 
-        HttpResponseMessage response;
         try
         {
+            HttpResponseMessage response;
+
             if (Id.HasValue)
             {
                 response = await Http.PutAsJsonAsync($"api/tours/{Id.Value}", tour);
@@ -127,22 +126,8 @@ else
                 response = await Http.PostAsJsonAsync("api/tours", tour);
             }
 
-            if (response.IsSuccessStatusCode)
-            {
-                Navigation.NavigateTo("/tours");
-            }
-            else
-            {
-                var errorJson = await response.Content.ReadAsStringAsync();
-                try
-                {
-                    using var doc = JsonDocument.Parse(errorJson);
-                    ErrorMessage = doc.RootElement.TryGetProperty("message", out var msg)
-                        ? msg.GetString() ?? "Errore di validazione."
-                        : $"Errore Server 400: {errorJson}";
-                }
-                catch { ErrorMessage = "Errore 400: Formato dei dati non supportato dal server."; }
-            }
+            if (response.IsSuccessStatusCode) Navigation.NavigateTo("/tours");
+            else ErrorMessage = "Errore 400: Dati rifiutati dal server.";
         }
         catch (Exception ex) { ErrorMessage = $"Errore di rete: {ex.Message}"; }
     }
