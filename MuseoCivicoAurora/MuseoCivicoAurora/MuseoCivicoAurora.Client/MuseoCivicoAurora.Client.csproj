@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ClassModels\ClassModels.csproj" />
+    <ProjectReference Include="C:\Users\GabrieleDistefano\source\repos\Pre-Same\MuseoCivicoAurora\MuseoCivicoAurora\MuseoCivicoAurora.shared\MuseoCivicoAurora.shared.csproj"/>
   </ItemGroup>
 
 </Project>

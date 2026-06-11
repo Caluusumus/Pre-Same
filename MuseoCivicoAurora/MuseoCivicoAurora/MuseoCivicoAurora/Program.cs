@@ -1,4 +1,4 @@
-using ClassModels;
+using MuseoCivicoAurora.shared;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

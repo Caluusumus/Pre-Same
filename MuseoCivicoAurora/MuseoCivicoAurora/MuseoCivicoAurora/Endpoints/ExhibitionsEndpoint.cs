@@ -1,4 +1,4 @@
-﻿using ClassModels;
+﻿using MuseoCivicoAurora.shared;
 using MuseoCivicoAurora.Service;
 
 namespace MuseoCivicoAurora.Endpoints;

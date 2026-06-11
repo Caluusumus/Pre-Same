@@ -1,9 +1,9 @@
 ﻿using System.Net.Http.Json;
-using ClassModels;
+using MuseoCivicoAurora.shared;
 
 namespace MuseoCivicoAurora.Client.Services;
 
-public class ArtworkApiClient
+public class ArtworkApiClient : IArtworkApiClient
 {
     private readonly HttpClient _httpClient;
     public ArtworkApiClient(HttpClient httpClient) => _httpClient = httpClient;

@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ClassModels\ClassModels.csproj" />
+    <ProjectReference Include="C:\Users\GabrieleDistefano\source\repos\Pre-Same\MuseoCivicoAurora\MuseoCivicoAurora\MuseoCivicoAurora.shared\MuseoCivicoAurora.shared.csproj" />
     <ProjectReference Include="..\MuseoCivicoAurora.Client\MuseoCivicoAurora.Client.csproj" />
     <PackageReference Include="Dapper" Version="2.1.79" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.8" />

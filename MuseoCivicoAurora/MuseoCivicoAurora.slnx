@@ -1,5 +1,5 @@
 <Solution>
-  <Project Path="ClassModels/ClassModels.csproj" Id="09ed449d-3075-4727-bfdd-d7aa8545c2a5" />
   <Project Path="MuseoCivicoAurora/MuseoCivicoAurora.Client/MuseoCivicoAurora.Client.csproj" />
+  <Project Path="MuseoCivicoAurora/MuseoCivicoAurora.shared/MuseoCivicoAurora.shared.csproj" />
   <Project Path="MuseoCivicoAurora/MuseoCivicoAurora/MuseoCivicoAurora.csproj" />
 </Solution>

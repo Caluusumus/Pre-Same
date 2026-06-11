@@ -2,10 +2,14 @@
 @page "/bookings/edit/{Id:guid}"
 @attribute [Authorize]
 @rendermode InteractiveWebAssembly
-@using ClassModels
+@using MuseoCivicoAurora.shared
+@using MuseoCivicoAurora.Client.Services
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Authorization
+
+@inject IBookingApiClient BookingApi
+@inject ITourApiClient TourApi
 @inject HttpClient Http
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
@@ -13,9 +17,9 @@
 <div class="container my-5">
     <h1 class="mb-4">@(Id == null ? "Prenota una Visita Guidata" : "Modifica Prenotazione")</h1>
 
-    @if (!string.IsNullOrEmpty(ErrorMessage))
+    @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-danger shadow-sm fw-bold">@ErrorMessage</div>
+        <div class="alert alert-danger shadow-sm fw-bold">@errorMessage</div>
     }
 
     @if (tours == null)
@@ -84,11 +88,11 @@
 
 @code {
     [Parameter] public Guid? Id { get; set; }
-    [SupplyParameterFromQuery] public Guid? tourId { get; set; } 
+    [SupplyParameterFromQuery] public Guid? tourId { get; set; }
 
     private Booking booking = new Booking { Status = "confirmed", ParticipantsCount = 1 };
     private List<Tour>? tours;
-    private string ErrorMessage = string.Empty;
+    private string errorMessage = string.Empty;
     private bool isAdmin = false;
 
     protected override async Task OnInitializedAsync()
@@ -104,36 +108,52 @@
             if (tourId.HasValue && tourId != Guid.Empty)
                 booking.TourId = tourId.Value;
 
-            tours = await Http.GetFromJsonAsync<List<Tour>>("api/tours");
+            // USING INTERFACE INSTEAD OF HTTP
+            var fetchedTours = await TourApi.GetToursAsync();
+            tours = fetchedTours?.ToList();
 
             if (Id.HasValue)
             {
-                var fetched = await Http.GetFromJsonAsync<Booking>($"api/bookings/{Id.Value}");
-                if (fetched != null) booking = fetched;
+                // Fallback to HTTP for specific fetch if your Interface doesn't have GetById yet
+                var fetchedBooking = await Http.GetFromJsonAsync<Booking>($"api/bookings/{Id.Value}");
+                if (fetchedBooking != null) booking = fetchedBooking;
             }
         }
-        catch (Exception ex) { ErrorMessage = $"Errore: {ex.Message}"; }
+        catch (Exception ex) { errorMessage = $"Initialization Error: {ex.Message}"; }
     }
 
     private async Task Save()
     {
-        ErrorMessage = string.Empty;
+        errorMessage = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(booking.Email)) { ErrorMessage = "L'email è obbligatoria."; return; }
-        if (booking.TourId == Guid.Empty) { ErrorMessage = "Selezionare una Visita Guidata."; return; }
-        if (booking.ParticipantsCount <= 0) { ErrorMessage = "Seleziona almeno un partecipante."; return; }
+        if (string.IsNullOrWhiteSpace(booking.Email)) { errorMessage = "L'email è obbligatoria."; return; }
+        if (booking.TourId == Guid.Empty) { errorMessage = "Selezionare una Visita Guidata."; return; }
+        if (booking.ParticipantsCount <= 0) { errorMessage = "Seleziona almeno un partecipante."; return; }
 
         var selectedTour = tours?.FirstOrDefault(t => t.Id == booking.TourId);
         if (selectedTour != null)
         {
             if (selectedTour.DateTime < DateTime.Now)
             {
-                ErrorMessage = "ERRORE: Non è possibile prenotare una visita passata."; return;
+                errorMessage = "ERRORE: Non è possibile prenotare una visita passata."; return;
             }
-            if (booking.ParticipantsCount > selectedTour.ParticipantsCount)
+
+            // --- REAL CAPACITY VALIDATION LOGIC ---
+            var allBookings = await BookingApi.GetBookingsAsync();
+
+            // Calculate seats currently occupied by OTHER confirmed bookings for this tour
+            var occupiedSeats = (allBookings ?? new List<Booking>())
+                .Where(b => b.TourId == selectedTour.Id && b.Status == "confirmed" && b.Id != booking.Id)
+                .Sum(b => b.ParticipantsCount);
+
+            var remainingSeats = selectedTour.ParticipantsCount - occupiedSeats;
+
+            if (booking.ParticipantsCount > remainingSeats)
             {
-                ErrorMessage = $"ERRORE: Massimo consentito {selectedTour.ParticipantsCount} partecipanti."; return;
+                errorMessage = $"ERRORE: Posti esauriti. Rimangono solo {remainingSeats} posti disponibili per questa visita.";
+                return;
             }
+            // --------------------------------------
         }
 
         try
@@ -151,9 +171,20 @@
                 response = await Http.PostAsJsonAsync("api/bookings", booking);
             }
 
-            if (response.IsSuccessStatusCode) Navigation.NavigateTo("/bookings");
-            else ErrorMessage = "Errore durante il salvataggio. Controlla i dati.";
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/bookings");
+            }
+            else
+            {
+                errorMessage = "Errore durante il salvataggio. Controlla i dati.";
+            }
         }
-        catch (Exception ex) { ErrorMessage = $"Errore di rete: {ex.Message}"; }
+        catch (Exception ex) { errorMessage = $"Network Error: {ex.Message}"; }
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/bookings");
     }
 }

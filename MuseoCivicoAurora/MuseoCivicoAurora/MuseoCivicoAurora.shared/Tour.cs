@@ -1,4 +1,4 @@
-﻿namespace ClassModels;
+﻿namespace MuseoCivicoAurora.shared;
 
 public class Tour
 {
