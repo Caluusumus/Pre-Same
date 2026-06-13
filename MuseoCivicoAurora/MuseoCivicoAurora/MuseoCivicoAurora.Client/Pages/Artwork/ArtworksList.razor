@@ -1,7 +1,7 @@
 ﻿@page "/artworks"
 @using MuseoCivicoAurora.shared
 @using MuseoCivicoAurora.Client.Services
-@inject ArtworkApiClient ApiClient
+@inject IArtworkApiClient ApiClient
 @inject NavigationManager NavigationManager
 @rendermode InteractiveWebAssembly
 
@@ -44,10 +44,10 @@
                             <p class="fst-italic text-muted mb-3">di @(string.IsNullOrWhiteSpace(artwork.Artist) ? "Autore Ignoto" : artwork.Artist)</p>
 
                             <div class="mt-auto pt-3 border-top d-flex gap-2">
-                                <button class="btn btn-info flex-grow-1" @onclick="() => Details(artwork.Id)">Dettagli</button>
+                                <a class="btn btn-info flex-grow-1" @onclick="() => Details(artwork.Id)">Dettagli</a>
                                 <AuthorizeView Roles="Admin">                                    
-                                <button class="btn btn-warning" @onclick="() => Edit(artwork.Id)"><i class="bi bi-pencil"></i> Modifica</button>
-                                <button class="btn btn-danger" @onclick="() => Delete(artwork.Id)"><i class="bi bi-trash"></i> X</button>                                   
+                                <a class="btn btn-warning" @onclick="() => Edit(artwork.Id)"><i class="bi bi-pencil"></i> Modifica</a>
+                                <a class="btn btn-danger" @onclick="() => Delete(artwork.Id)"><i class="bi bi-trash"></i> X</a>                                   
                                 </AuthorizeView>
                             </div>
                             

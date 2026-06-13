@@ -1,7 +1,7 @@
 ﻿@page "/exhibitions"
 @using MuseoCivicoAurora.shared
 @using MuseoCivicoAurora.Client.Services
-@inject ExhibitionApiClient ApiClient
+@inject IExhibitionApiClient ApiClient
 @inject NavigationManager NavigationManager
 @rendermode InteractiveWebAssembly
 
@@ -57,18 +57,18 @@
 
                                 <AuthorizeView Roles="Admin">
                                     <Authorized>
-                                        <button class="btn btn-primary fw-bold px-4" @onclick="() => Details(exhibition.Id)">Gestisci Opere</button>
-                                        <button class="btn btn-outline-dark fw-bold" @onclick="() => Edit(exhibition.Id)">Modifica</button>
-                                        <button class="btn btn-danger fw-bold" @onclick="() => Delete(exhibition.Id)">Elimina</button>
+                                        <a class="btn btn-primary fw-bold px-4" @onclick="() => Details(exhibition.Id)">Gestisci Opere</a>
+                                        <a class="btn btn-outline-dark fw-bold" @onclick="() => Edit(exhibition.Id)">Modifica</a>
+                                        <a class="btn btn-danger fw-bold" @onclick="() => Delete(exhibition.Id)">Elimina</a>
                                     </Authorized>
                                     <NotAuthorized>
-                                        <button class="btn btn-primary fw-bold px-4" @onclick="() => Details(exhibition.Id)">Dettagli</button>
+                                        <a class="btn btn-primary fw-bold px-4" @onclick="() => Details(exhibition.Id)">Dettagli</a>
                                     </NotAuthorized>
                                 </AuthorizeView>
 
                                 <AuthorizeView>
                                     <Authorized>
-                                        <button class="btn btn-warning fw-bold px-4" @onclick="() => Book(exhibition.Id)">Prenota</button>
+                                        <a class="btn btn-warning fw-bold px-4" @onclick="() => Book(exhibition.Id)">Prenota</a>
                                     </Authorized>
                                 </AuthorizeView>
 

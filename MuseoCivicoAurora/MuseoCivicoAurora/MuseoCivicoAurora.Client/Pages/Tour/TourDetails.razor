@@ -17,7 +17,7 @@
 
             <AuthorizeView Roles="Admin">
                 <div>
-                    <button class="btn btn-outline-dark fw-bold" @onclick="() => Edit(tour.Id)">Modifica Visita</button>
+                    <a class="btn btn-outline-dark fw-bold" @onclick="() => Edit(tour.Id)">Modifica Visita</a>
                 </div>
             </AuthorizeView>
         </div>
@@ -66,7 +66,7 @@
                         <div class="d-flex flex-wrap gap-3">
                             <AuthorizeView>
                                 <Authorized>
-                                    <button class="btn btn-warning btn-lg fw-bold rounded-0 px-5" @onclick="Book">PRENOTA ORA</button>
+                                    <a class="btn btn-warning btn-lg fw-bold rounded-0 px-5" @onclick="Book">PRENOTA ORA</a>
                                 </Authorized>
                                 <NotAuthorized>
                                     <a href="/Account/Login" class="btn btn-dark btn-lg fw-bold rounded-0 px-4">ACCEDI PER PRENOTARE</a>

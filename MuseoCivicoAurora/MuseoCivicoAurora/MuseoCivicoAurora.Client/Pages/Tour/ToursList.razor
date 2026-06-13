@@ -1,7 +1,7 @@
 ﻿@page "/tours"
 @using MuseoCivicoAurora.shared
 @using MuseoCivicoAurora.Client.Services
-@inject TourApiClient ApiClient
+@inject ITourApiClient ApiClient
 @inject NavigationManager NavigationManager
 @rendermode InteractiveWebAssembly
 
@@ -44,11 +44,11 @@
                         <td>@tour.Guide</td>
                         <td>@tour.ParticipantsCount</td>
                         <td class="text-end gap-2">
-                            <button  class="btn btn-sm btn-info fw-bold me-2" @onclick="() => Details(tour.Id)">Dettagli</button>
+                            <a  class="btn btn-sm btn-info fw-bold me-2" @onclick="() => Details(tour.Id)">Dettagli</a>
 
                             <AuthorizeView>
                                 <Authorized>
-                                    <button class="btn btn-sm btn-success fw-bold" @onclick="() => Book(tour.Id)">Prenota</button>
+                                    <a class="btn btn-sm btn-success fw-bold" @onclick="() => Book(tour.Id)">Prenota</a>
                                 </Authorized>
                                 <NotAuthorized>
                                     <span class="text-muted small fst-italic ms-2">Accedi per prenotare</span>
@@ -56,8 +56,8 @@
                             </AuthorizeView>
 
                             <AuthorizeView Roles="Admin">
-                                <button class="btn btn-sm btn-outline-dark ms-2" @onclick="() => Edit(tour.Id)">Modifica</button>
-                                <button class="btn btn-sm btn-danger ms-1" @onclick="() => Delete(tour.Id)">Elimina</button>
+                                <a class="btn btn-sm btn-outline-dark ms-2" @onclick="() => Edit(tour.Id)">Modifica</a>
+                                <a class="btn btn-sm btn-danger ms-1" @onclick="() => Delete(tour.Id)">Elimina</a>
                             </AuthorizeView>
                         </td>
                     </tr>

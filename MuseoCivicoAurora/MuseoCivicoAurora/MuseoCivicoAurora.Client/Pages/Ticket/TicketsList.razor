@@ -4,7 +4,7 @@
 @using MuseoCivicoAurora.Client.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-@inject TicketApiClient ApiClient
+@inject ITicketApiClient ApiClient
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthStateProvider
 @rendermode InteractiveWebAssembly
@@ -54,8 +54,8 @@
 
                         <td>
                             <div class="d-flex flex-column gap-1 align-items-start">                                
-                                    <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => ExhibitionDetails(ticket.ExhibitionId)">Vedi Mostra</button>
-                                <button class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => TourDetails(ticket.TourId)">Vedi Visita</button>
+                                    <a class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => ExhibitionDetails(ticket.ExhibitionId)">Vedi Mostra</a>
+                                <a class="btn btn-sm btn-outline-dark fw-bold" @onclick="() => TourDetails(ticket.TourId)">Vedi Visita</a>
                                     <span class="text-muted small fst-italic">Ingresso Generale</span>
                                 
                             </div>
@@ -63,8 +63,8 @@
 
                         <AuthorizeView Roles="Admin">
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-dark" @onclick="() => Edit(ticket.Id)">Modifica</button>
-                                <button class="btn btn-sm btn-danger ms-1" @onclick="() => Delete(ticket.Id)">Elimina</button>
+                                <a class="btn btn-sm btn-outline-dark" @onclick="() => Edit(ticket.Id)">Modifica</a>
+                                <a class="btn btn-sm btn-danger ms-1" @onclick="() => Delete(ticket.Id)">Elimina</a>
                             </td>
                         </AuthorizeView>
                     </tr>

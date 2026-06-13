@@ -49,9 +49,9 @@ else
                                 <td>@(artwork.Year?.ToString("yyyy") ?? "-")</td>
                                 <td>
                                     <AuthorizeView Roles="Admin">
-                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(artwork.Id)">
+                                    <a class="btn btn-sm btn-outline-danger" @onclick="() => Delete(artwork.Id)">
                                         Rimuovi da questa Mostra
-                                    </button>
+                                    </a>
                                     </AuthorizeView>
                                 </td>
                             </tr>
@@ -90,9 +90,9 @@ else
                     </select>
                 </div>
                 <div class="col-md-4">
-                        <button class="btn btn-success w-100" @onclick="CreateNew" disabled="@(selectedArtworkId == Guid.Empty)">
+                        <a class="btn btn-success w-100" @onclick="CreateNew" disabled="@(selectedArtworkId == Guid.Empty)">
                         Collega Opera
-                    </button>
+                    </a>
                 </div>
             </div>
             </AuthorizeView>

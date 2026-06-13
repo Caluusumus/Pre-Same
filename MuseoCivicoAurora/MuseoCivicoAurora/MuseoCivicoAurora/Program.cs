@@ -63,11 +63,11 @@ SqlMapper.AddTypeHandler(new TimeOnlyTypeHandler());
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddHttpClient<ExhibitionApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
-builder.Services.AddHttpClient<ArtworkApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
-builder.Services.AddHttpClient<BookingApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
-builder.Services.AddHttpClient<TicketApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
-builder.Services.AddHttpClient<TourApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
+builder.Services.AddHttpClient<IExhibitionApiClient, ExhibitionApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
+builder.Services.AddHttpClient<IArtworkApiClient, ArtworkApiClient> (c => c.BaseAddress = new Uri("https://localhost:7215"));
+builder.Services.AddHttpClient<IBookingApiClient, BookingApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
+builder.Services.AddHttpClient<ITicketApiClient, TicketApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
+builder.Services.AddHttpClient<ITourApiClient, TourApiClient>(c => c.BaseAddress = new Uri("https://localhost:7215"));
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7215") });
 
 
